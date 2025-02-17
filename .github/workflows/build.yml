@@ -28,11 +28,11 @@ jobs:
         env:
           USER: runner
       - name: Build
-        run: nix build .#gnosisvpn -L
+        run: nix build .#gvpn -L
       - name: Lint and formatting check
         run: nix run .#check
       - name: Tests
-        run: nix build .#gnosisvpn-test
+        run: nix build .#gvpn-test
   build-binaries:
     strategy:
       matrix:
