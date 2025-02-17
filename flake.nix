@@ -77,27 +77,11 @@
           rust-builder-x86_64-linux = import ./nix/rust-builder.nix
             { inherit nixpkgs rust-overlay crane localSystem; };
 
-          rust-builder-x86_64-darwin = import
-            ./nix/rust-builder.nix
-            {
-              inherit nixpkgs rust-overlay crane localSystem;
-              crossSystem = pkgs.lib.systems.examples.x86_64-darwin;
-              isCross = true;
-            };
-
           rust-builder-aarch64-linux = import
             ./nix/rust-builder.nix
             {
               inherit nixpkgs rust-overlay crane localSystem;
               crossSystem = pkgs.lib.systems.examples.aarch64-multiplatform;
-              isCross = true;
-            };
-
-          rust-builder-aarch64-darwin = import
-            ./nix/rust-builder.nix
-            {
-              inherit nixpkgs rust-overlay crane localSystem;
-              crossSystem = pkgs.lib.systems.examples.aarch64-darwin;
               isCross = true;
             };
 
@@ -127,14 +111,6 @@
             ./nix/rust-package.nix
             gnosisvpnBuildArgs;
           gnosisvpn-armv7l-linux = rust-builder-armv7l-linux.callPackage
-            ./nix/rust-package.nix
-            gnosisvpnBuildArgs;
-          # CAVEAT: must be built from a darwin system
-          gnosisvpn-x86_64-darwin = rust-builder-x86_64-darwin.callPackage
-            ./nix/rust-package.nix
-            gnosisvpnBuildArgs;
-          # CAVEAT: must be built from a darwin system
-          gnosisvpn-aarch64-darwin = rust-builder-aarch64-darwin.callPackage
             ./nix/rust-package.nix
             gnosisvpnBuildArgs;
 
@@ -215,10 +191,6 @@
             inherit gnosisvpn gnosisvpn-debug;
             inherit gnosisvpn-test;
             inherit gnosisvpn-aarch64-linux gnosisvpn-armv7l-linux gnosisvpn-x86_64-linux;
-            # FIXME: Darwin cross-builds are currently broken.
-            # Follow https://github.com/nixos/nixpkgs/pull/256590
-            inherit gnosisvpn-aarch64-darwin gnosisvpn-x86_64-darwin;
-
 
             default = gnosisvpn;
           };
@@ -228,6 +200,6 @@
           formatter = config.treefmt.build.wrapper;
         };
       # platforms which are supported as build environments
-      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
+      systems = [ "x86_64-linux" "aarch64-linux" ];
     };
 }
