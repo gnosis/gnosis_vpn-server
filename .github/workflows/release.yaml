@@ -65,11 +65,9 @@ jobs:
           mkdir -p binaries
           for architecture in "${architectures[@]}"; do
               echo "Downloading from GCP binary gnosis_vpn-${architecture}"
-              gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.environment.outputs.release_version }}:gnosis_vpn-${architecture} --destination=./binaries --local-filename=gnosis_vpn-${architecture}
-              gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.environment.outputs.release_version }}:gnosis_vpn-ctl-${architecture} --destination=./binaries --local-filename=gnosis_vpn-ctl-${architecture}
-              echo "Uploading binary gnosis_vpn-${architecture}"
-              gh release upload v${{ steps.environment.outputs.release_version }} "$PWD/binaries/gnosis_vpn-${architecture}" --clobber
-              gh release upload v${{ steps.environment.outputs.release_version }} "$PWD/binaries/gnosis_vpn-ctl-${architecture}" --clobber
+              gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.environment.outputs.release_version }}:gnosis_vpn-server-${architecture} --destination=./binaries --local-filename=gnosis_vpn-server-${architecture}
+              echo "Uploading binary gnosis_vpn-server-${architecture}"
+              gh release upload v${{ steps.environment.outputs.release_version }} "$PWD/binaries/gnosis_vpn-server-${architecture}" --clobber
           done
         env:
           GH_TOKEN: ${{ github.token }}
