@@ -1,0 +1,53 @@
+name: Build
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+concurrency:
+  group: ${{ github.ref }}-build
+  cancel-in-progress: true
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+      - name: Use Nix Cache
+        uses: cachix/cachix-action@v15
+        with:
+          name: gnosis-vpn-server
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        env:
+          USER: runner
+      - name: Build
+        run: nix build .#gvpn -L
+      - name: Lint and formatting check
+        run: nix run .#check
+      - name: Tests
+        run: nix build .#gvpn-test
+  build-binaries:
+    strategy:
+      matrix:
+        binary:
+          - architecture: x86_64-linux
+            runner: ubuntu-latest
+          - architecture: aarch64-linux
+            runner: ubuntu-latest
+          - architecture: armv7l-linux
+            runner: ubuntu-latest
+    name: Binary ${{ matrix.binary.architecture }}
+    uses: ./.github/workflows/build-binaries.yaml
+    with:
+      branch: ${{ github.event.pull_request.head.ref }}
+      runner: ${{ matrix.binary.runner }}
+      architecture: ${{ matrix.binary.architecture }}
+      version_type: "commit"
+    secrets: inherit

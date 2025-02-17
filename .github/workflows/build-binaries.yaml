@@ -1,0 +1,116 @@
+#################################################################################
+# Pipeline to build binaries
+#################################################################################
+name: Build binaries
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      runner:
+        required: true
+        type: string
+      architecture:
+        required: true
+        type: string
+      version_type:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      runner:
+        type: choice
+        options:
+          - ubuntu-latest
+        required: true
+      architecture:
+        type: choice
+        options:
+          - x86_64-linux
+          - aarch64-linux
+          - armv7l-linux
+        required: true
+        description: "Architecture to build for"
+concurrency:
+  group: ${{ github.ref }}-build-binary-${{ inputs.architecture }}
+  cancel-in-progress: true
+jobs:
+  binary:
+    if: >-
+      github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed' && contains(github.event.pull_request.labels.*.name, format('binary:{0}', inputs.architecture))) || (github.event_name == 'pull_request' && github.event.action == 'closed')
+    runs-on: ${{ github.event.inputs.runner || inputs.runner }}
+    timeout-minutes: 60
+    steps:
+      - name: Set environment variables
+        id: vars
+        run: |
+          declare branch architecture publish_type
+          if [[ "${{ inputs.branch }}" != "" ]]; then
+            echo "The workflow is triggered by other pipeline"
+            # It can be triggered by the build, merge or release pipelines
+            branch=${{ inputs.branch }}
+            architecture=${{ inputs.architecture }}
+          else
+            echo "The workflow is triggered manually"
+            branch=${{ github.ref_name }}
+            architecture=${{ github.event.inputs.architecture }}
+          fi
+          echo "Invocation parameters:"
+          echo "branch=${branch}" | tee -a $GITHUB_OUTPUT
+          echo "architecture=${architecture}" | tee -a $GITHUB_OUTPUT
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.vars.outputs.branch }}
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+      - name: Use Nix Cache
+        uses: cachix/cachix-action@v15
+        with:
+          name: gnosis-vpn-server
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        env:
+          USER: runner
+      - name: Get version
+        if: inputs.version_type != ''
+        id: version
+        run: |
+          base_version=$(grep -E '^version\s*=' Cargo.toml | awk -F\" '{print $2}')
+          if [[ ${{ inputs.version_type }} == "commit" ]]; then
+            echo "binary_version=${base_version}-commit.$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+            echo "publish_type=workflow" | tee -a $GITHUB_OUTPUT
+          elif [[ ${{ inputs.version_type }} == "pr" ]]; then
+            echo "binary_version=${base_version}-pr.${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "publish_type=artifact-registry" | tee -a $GITHUB_OUTPUT
+          elif [[ ${{ inputs.version_type }} == "release" ]]; then
+            echo "binary_version=${base_version}" >> $GITHUB_OUTPUT
+            echo "publish_type=github" | tee -a $GITHUB_OUTPUT
+          else
+            echo "Invalid version type"
+            exit 1
+          fi
+      - name: Build binary ${{ steps.vars.outputs.architecture}}
+        run: |
+          nix build .#gvpn-${{ steps.vars.outputs.architecture}} -L
+          mkdir -p binaries
+          cp ./result/bin/gnosis_vpn-server binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}
+          if [[ "${{ inputs.version_type }}" == "commit" ]]; then
+            mv binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}} binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}-${{ steps.version.outputs.binary_version }}
+          fi
+      - name: Setup GCP
+        if: steps.version.outputs.publish_type == 'artifact-registry' || steps.version.outputs.publish_type == 'github'
+        uses: hoprnet/hopr-workflows/actions/setup-gcp@master
+        with:
+          google-credentials: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+          install-sdk: "true"
+      - name: Publish Artifact registry
+        if: steps.version.outputs.publish_type == 'artifact-registry' || steps.version.outputs.publish_type == 'github'
+        run: |
+          gcloud artifacts generic upload --location=europe-west3 --repository="rust-binaries" --version=${{ steps.version.outputs.binary_version }} --package=gnosis_vpn --source=binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}
+      - name: Upload ${{ steps.vars.outputs.architecture }} binaries
+        if: steps.version.outputs.publish_type == 'workflow'
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ steps.vars.outputs.architecture }}
+          path: ${{ github.workspace }}/binaries/*
