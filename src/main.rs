@@ -1,11 +1,26 @@
-use clap::Parser;
+#[macro_use]
+extern crate rocket;
 
-/// Gnosis VPN server - orchestrate WireGuard server for GnosisVPN connections
-#[derive(Parser)]
-#[command(version)]
-struct Cli {}
+use cli::Command;
 
-fn main() {
-    let _args = Cli::parse();
-    println!("starting {} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+mod cli;
+
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, world!"
+}
+
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
+    let args = cli::parse();
+
+    match args.command {
+        Command::Serve {} => {
+            println!("starting {} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+
+            let _rocket = rocket::build().mount("/", routes![index]).launch().await?;
+        }
+    }
+
+    Ok(())
 }
