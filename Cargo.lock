@@ -464,6 +464,7 @@ name = "gnosis_vpn-server"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "figment",
  "rocket",
  "serde",
  "toml",
