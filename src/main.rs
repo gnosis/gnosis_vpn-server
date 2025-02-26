@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use cli::Command;
 use figment::providers::{Format, Toml};
 use ops::Ops;
@@ -25,9 +25,10 @@ async fn main() -> Result<()> {
     let args = cli::parse();
 
     let config_path = args.config_file;
-    let content = fs::read_to_string(config_path)?;
-    let config: Config = toml::from_str(&content)?;
+    let content = fs::read_to_string(config_path).context("failed reading config file")?;
+    let config: Config = toml::from_str(&content).context("failed parsing config file")?;
     let ops = Ops::from(config);
+    println!("ops: {:?}", ops);
 
     match args.command {
         Command::Serve {} => {

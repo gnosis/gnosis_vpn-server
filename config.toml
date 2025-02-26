@@ -1,0 +1,2 @@
+allowed_client_ips = { start = "10.128.0.2", end = "10.128.0.10" }
+wireguard_config_path = "./wggnosisvpn.conf"
