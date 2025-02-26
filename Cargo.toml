@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
 clap = { version = "4.5", features = ["derive", "env"] }
 figment = "0.10"
 rocket = "0.5"
