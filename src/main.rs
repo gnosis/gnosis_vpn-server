@@ -28,7 +28,6 @@ async fn main() -> Result<()> {
     let content = fs::read_to_string(config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file")?;
     let ops = Ops::from(config);
-    println!("ops: {:?}", ops);
 
     match args.command {
         Command::Serve {} => {
@@ -39,11 +38,15 @@ async fn main() -> Result<()> {
                 ip = ops.rocket_address,
                 port = ops.rocket_port
             );
-            let params = r"
-                address = {ops.rocket_address}
-                port = {ops.rocket_port}
-            ";
-            let figment = Figment::from(rocket::Config::default()).merge(Toml::string(params));
+            let params = format!(
+                r#"
+                address = "{address}"
+                port = {port}
+                "#,
+                address = ops.rocket_address,
+                port = ops.rocket_port
+            );
+            let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
         }
     }
