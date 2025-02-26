@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -13,6 +14,13 @@ pub struct Ops {
     pub wg_device_config: PathBuf,
     pub client_handshake_timeout: Duration,
 }
+
+impl Ops {
+    pub fn device(&self) -> Option<&str> {
+        self.wg_device_config.file_stem().and_then(OsStr::to_str)
+    }
+}
+
 impl From<Config> for Ops {
     fn from(config: Config) -> Self {
         let def_rocket_address = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));

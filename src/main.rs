@@ -51,7 +51,11 @@ async fn main() -> Result<()> {
             let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
         }
         Command::Status {} => {
-            println!("status");
+            let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
+            let wg_server = wg_server::WgServer::new(&device);
+            let dump = wg_server.dump().context("failed to determine wg show dump")?;
+            let status = wg_status::new(&dump, &ops);
+            println!("status {:?}", status);
         }
     }
 
