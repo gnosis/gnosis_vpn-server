@@ -14,6 +14,7 @@ mod cli;
 mod config;
 mod ip_range;
 mod ops;
+mod wg_server;
 
 #[get("/")]
 fn index() -> &'static str {
@@ -48,6 +49,9 @@ async fn main() -> Result<()> {
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
+        }
+        Command::Status {} => {
+            println!("status");
         }
     }
 

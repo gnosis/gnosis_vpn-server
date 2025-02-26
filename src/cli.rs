@@ -23,6 +23,10 @@ pub enum Command {
     /// Start http server listening for client requests
     #[command()]
     Serve {},
+
+    /// Access current wireguard status
+    #[command()]
+    Status {},
 }
 
 pub fn parse() -> Cli {
