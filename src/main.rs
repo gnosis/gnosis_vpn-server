@@ -14,6 +14,7 @@ mod cli;
 mod config;
 mod ip_range;
 mod ops;
+mod status;
 mod wg_server;
 
 #[get("/")]
@@ -54,7 +55,7 @@ async fn main() -> Result<()> {
             let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
             let wg_server = wg_server::WgServer::new(&device);
             let dump = wg_server.dump().context("failed to determine wg show dump")?;
-            let status = wg_status::new(&dump, &ops);
+            let status = status::Status::from_dump(&dump, &ops);
             println!("status {:?}", status);
         }
     }

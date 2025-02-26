@@ -2,11 +2,13 @@ use anyhow::{bail, Context, Error};
 use std::net::SocketAddr;
 use std::process::Command;
 
+#[derive(Debug)]
 pub struct WgServer {
     device: String,
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Dump {
     pub private_key: String,
     pub public_key: String,
@@ -16,6 +18,7 @@ pub struct Dump {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Peer {
     pub public_key: String,
     pub preshared_key: String,
@@ -41,6 +44,9 @@ impl WgServer {
             .arg("dump")
             .output()
             .with_context(|| format!("wg show {} dump failed", &self.device))?;
+        if output.status.success() == false {
+            bail!("wg show dump failed: {:?}", output);
+        }
         let content = String::from_utf8(output.stdout).context("unable to convert output to string")?;
         let lines: Vec<&str> = content.split('\n').collect();
         if lines.len() < 2 {
