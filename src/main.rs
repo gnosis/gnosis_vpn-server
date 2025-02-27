@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
         }
         Command::Status { json } => {
             let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
-            let wg_server = wg_server::WgServer::new(&device);
+            let wg_server = wg_server::WgServer::new(device);
             let dump = wg_server.dump().context("failed to determine wg show dump")?;
             let status = status::Status::from_dump(&dump, &ops);
             if json {

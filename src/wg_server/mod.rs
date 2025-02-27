@@ -35,7 +35,7 @@ impl WgServer {
             .arg("dump")
             .output()
             .with_context(|| format!("wg show {} dump failed", &self.device))?;
-        if output.status.success() == false {
+        if !output.status.success() {
             bail!("wg show dump failed: {:?}", output);
         }
         let content = String::from_utf8(output.stdout).context("unable to convert output to string")?;
