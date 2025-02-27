@@ -24,4 +24,8 @@ impl Peer {
         let valid = dur + *timeout > now;
         Ok(!valid)
     }
+
+    pub fn has_handshaked(&self) -> bool {
+        self.latest_handshake > 0
+    }
 }

@@ -8,7 +8,8 @@ pub struct Status {
     pub total_allowed_clients: u32,
     pub registered_allowed_clients: u32,
     pub free_client_slots: u32,
-    pub removable_allowed_expired_clients: u32,
+    pub allowed_expired_clients: u32,
+    pub allowed_never_connected_clients: u32,
     pub registered_clients_outside_of_range: u32,
 }
 
@@ -22,9 +23,11 @@ impl Status {
 
         let registered_allowed_clients = inside.len() as u32;
         let free_client_slots = total_allowed_clients - registered_allowed_clients;
-        let removable_allowed_expired_clients = inside
+        let allowed_never_connected_clients = inside.iter().filter(|peer| !peer.has_handshaked()).count() as u32;
+
+        let allowed_expired_clients = inside
             .iter()
-            .filter(|peer| peer.timed_out(&ops.client_handshake_timeout).unwrap_or(false))
+            .filter(|peer| peer.has_handshaked() && peer.timed_out(&ops.client_handshake_timeout).unwrap_or(false))
             .count() as u32;
         let registered_clients_outside_of_range = outside.len() as u32;
 
@@ -32,7 +35,8 @@ impl Status {
             total_allowed_clients,
             registered_allowed_clients,
             free_client_slots,
-            removable_allowed_expired_clients,
+            allowed_expired_clients,
+            allowed_never_connected_clients,
             registered_clients_outside_of_range,
         }
     }
