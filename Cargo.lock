@@ -474,6 +474,7 @@ dependencies = [
  "figment",
  "rocket",
  "serde",
+ "serde_json",
  "toml",
 ]
 

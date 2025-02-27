@@ -8,26 +8,24 @@ pub struct WgServer {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Dump {
-    pub private_key: String,
-    pub public_key: String,
-    pub listen_port: u16,
-    pub fwmark: String,
+    private_key: String,
+    public_key: String,
+    listen_port: u16,
+    fwmark: String,
     pub peers: Vec<Peer>,
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Peer {
-    pub public_key: String,
-    pub preshared_key: String,
-    pub endpoint: Option<SocketAddr>,
-    pub allowed_ips: String,
-    pub latest_handshake: u64,
-    pub transfer_rx: u64,
-    pub transfer_tx: u64,
-    pub persistent_keepalive: u64,
+    public_key: String,
+    preshared_key: String,
+    endpoint: Option<SocketAddr>,
+    allowed_ips: String,
+    latest_handshake: u64,
+    transfer_rx: u64,
+    transfer_tx: u64,
+    persistent_keepalive: u64,
 }
 
 impl WgServer {
