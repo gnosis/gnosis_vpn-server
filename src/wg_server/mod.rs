@@ -1,6 +1,10 @@
 use anyhow::{bail, Context, Error};
-use std::net::SocketAddr;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::process::Command;
+
+pub use peer::Peer;
+
+mod peer;
 
 #[derive(Debug)]
 pub struct WgServer {
@@ -8,24 +12,13 @@ pub struct WgServer {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Dump {
     private_key: String,
     public_key: String,
     listen_port: u16,
     fwmark: String,
     pub peers: Vec<Peer>,
-}
-
-#[derive(Debug)]
-pub struct Peer {
-    public_key: String,
-    preshared_key: String,
-    endpoint: Option<SocketAddr>,
-    allowed_ips: String,
-    latest_handshake: u64,
-    transfer_rx: u64,
-    transfer_tx: u64,
-    persistent_keepalive: u64,
 }
 
 impl WgServer {
@@ -93,6 +86,11 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
             let preshared_key = parts[1].to_string();
             let endpoint = parts[2].parse::<SocketAddr>().ok();
             let allowed_ips = parts[3].to_string();
+            let res_ip = allowed_ips.split("/32").take(1).collect::<String>().parse::<Ipv4Addr>();
+            let ip = match res_ip {
+                Ok(ip) => ip,
+                Err(err) => bail!("unable to parse ip from allowed_ips[{}]: {}", allowed_ips, err),
+            };
             let latest_handshake = parts[4].parse::<u64>().unwrap_or_default();
             let transfer_rx = parts[5].parse::<u64>().unwrap_or_default();
             let transfer_tx = parts[6].parse::<u64>().unwrap_or_default();
@@ -101,7 +99,7 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
                 public_key,
                 preshared_key,
                 endpoint,
-                allowed_ips,
+                ip,
                 latest_handshake,
                 transfer_rx,
                 transfer_tx,

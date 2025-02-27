@@ -26,7 +26,11 @@ pub enum Command {
 
     /// Access current wireguard status
     #[command()]
-    Status {},
+    Status {
+        /// format output as json
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 pub fn parse() -> Cli {

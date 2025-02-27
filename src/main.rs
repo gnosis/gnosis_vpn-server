@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
 
     let config_path = args.config_file;
     let content = fs::read_to_string(config_path).context("failed reading config file")?;
-    let config: Config = toml::from_str(&content).context("failed parsing config file")?;
+    let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
     let ops = Ops::from(config);
 
     match args.command {
@@ -51,12 +51,16 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
         }
-        Command::Status {} => {
+        Command::Status { json } => {
             let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
             let wg_server = wg_server::WgServer::new(&device);
             let dump = wg_server.dump().context("failed to determine wg show dump")?;
             let status = status::Status::from_dump(&dump, &ops);
-            println!("status {:?}", status);
+            if json {
+                println!("{}", serde_json::to_string_pretty(&status)?);
+            } else {
+                println!("{:?}", status);
+            }
         }
     }
 

@@ -3,8 +3,23 @@ use std::net::Ipv4Addr;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct IpRange {
-    pub start: Ipv4Addr,
-    pub end: Ipv4Addr,
+    start: Ipv4Addr,
+    end: Ipv4Addr,
+}
+
+impl IpRange {
+    pub fn count(&self) -> u32 {
+        let start = u32::from(self.start);
+        let end = u32::from(self.end);
+        end - start + 1
+    }
+
+    pub fn contains(&self, ip: Ipv4Addr) -> bool {
+        let ip = u32::from(ip);
+        let start = u32::from(self.start);
+        let end = u32::from(self.end);
+        ip >= start && ip <= end
+    }
 }
 
 impl<'de> Deserialize<'de> for IpRange {
@@ -56,6 +71,6 @@ mod tests {
             r#"start = "10.128.0.2"
             end = "10.12.0.10""#,
         );
-        assert!(res2.is_err());
+        assert!(res3.is_err());
     }
 }
