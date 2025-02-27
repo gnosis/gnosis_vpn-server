@@ -5,39 +5,39 @@ use crate::wg_server::{Dump, Peer};
 
 #[derive(Debug, Serialize)]
 pub struct Status {
-    pub total_allowed_clients: u32,
-    pub registered_allowed_clients: u32,
+    pub total_client_slots: u32,
     pub free_client_slots: u32,
-    pub allowed_expired_clients: u32,
-    pub allowed_never_connected_clients: u32,
-    pub registered_clients_outside_of_range: u32,
+    pub registered_clients: u32,
+    pub expired_clients: u32,
+    pub never_connected_clients: u32,
+    pub clients_outside_of_slots_range: u32,
 }
 
 impl Status {
     pub fn from_dump(dump: &Dump, ops: &Ops) -> Self {
-        let total_allowed_clients = ops.client_address_range.count();
+        let total_client_slots = ops.client_address_range.count();
         let (inside, outside): (Vec<&Peer>, Vec<&Peer>) = dump
             .peers
             .iter()
             .partition(|peer| ops.client_address_range.contains(peer.ip));
 
-        let registered_allowed_clients = inside.len() as u32;
-        let free_client_slots = total_allowed_clients - registered_allowed_clients;
-        let allowed_never_connected_clients = inside.iter().filter(|peer| !peer.has_handshaked()).count() as u32;
+        let registered_clients = inside.len() as u32;
+        let free_client_slots = total_client_slots - registered_clients;
+        let never_connected_clients = inside.iter().filter(|peer| !peer.has_handshaked()).count() as u32;
 
-        let allowed_expired_clients = inside
+        let expired_clients = inside
             .iter()
             .filter(|peer| peer.has_handshaked() && peer.timed_out(&ops.client_handshake_timeout).unwrap_or(false))
             .count() as u32;
-        let registered_clients_outside_of_range = outside.len() as u32;
+        let clients_outside_of_slots_range = outside.len() as u32;
 
         Self {
-            total_allowed_clients,
-            registered_allowed_clients,
+            total_client_slots,
+            registered_clients,
             free_client_slots,
-            allowed_expired_clients,
-            allowed_never_connected_clients,
-            registered_clients_outside_of_range,
+            expired_clients,
+            never_connected_clients,
+            clients_outside_of_slots_range,
         }
     }
 }
