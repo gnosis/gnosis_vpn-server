@@ -7,15 +7,17 @@ use figment::providers::{Format, Toml};
 use ops::Ops;
 use rocket::figment::Figment;
 use std::fs;
+use std::process;
 
 use crate::config::Config;
 
 mod cli;
 mod config;
+mod dump;
 mod ip_range;
 mod ops;
+mod register;
 mod status;
-mod wg_server;
 
 #[get("/")]
 fn index() -> &'static str {
@@ -51,34 +53,47 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
         }
+
         Command::Status { json } => {
             let status = status::status(&ops);
-            if json {
-                println!("{}", serde_json::to_string_pretty(&status)?);
-            } else {
-                println!("{:?}", status);
-            }
-        }
-        Command::Register { public_key, json } => {
-            let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
-            let mut wg_server = wg_server::WgServer::new(device);
-            let result = wg_server.register(&ops, &public_key);
-            match result {
-                Ok(ip) => {
+            match status {
+                Ok(status) => {
                     if json {
-                        println!("{{\"ip\": \"{}\"}}", ip);
+                        println!("{}", serde_json::to_string_pretty(&status)?);
                     } else {
-                        println!("{}", ip);
+                        println!("{:?}", status);
                     }
                 }
-                Err(err) => match err {
-                    wg_server::RegisterError::NoFreeIp => {
-                        println!("no free IP available");
+                Err(err) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
                     }
-                    wg_server::RegisterError::Generic(err) => {
-                        eprintln!("error: {}", err);
+                    process::exit(1);
+                }
+            }
+        }
+
+        Command::Register { public_key, json } => {
+            let mut rng = rand::rng();
+            let register = register::register(&ops, &mut rng, &public_key);
+            match register {
+                Ok(register) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&register)?);
+                    } else {
+                        println!("{:?}", register);
                     }
-                },
+                }
+                Err(err) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
+                    }
+                    process::exit(1);
+                }
             }
         }
     }

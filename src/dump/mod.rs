@@ -7,12 +7,7 @@ pub use peer::Peer;
 mod peer;
 
 #[derive(Debug)]
-pub struct WgServer {
-    device: String,
-    rng: rand::rngs::ThreadRng,
-}
-
-#[derive(Debug)]
+#[allow(dead_code)]
 pub struct Dump {
     private_key: String,
     public_key: String,
@@ -22,60 +17,48 @@ pub struct Dump {
 }
 
 #[derive(Debug, Serialize)]
-pub enum DumpError {
+pub enum Error {
     Generic(String),
     NoOutputLines,
     WrongNumberOfFieldsInServerLine,
     WrongNumberOfFieldsInPeerLine,
 }
 
-impl WgServer {
-    pub fn new(device: &str) -> WgServer {
-        WgServer {
-            device: device.to_string(),
-            rng: rand::rng(),
+pub fn dump(device: &str) -> Result<Dump, Error> {
+    let res_output = Command::new("wg").arg("show").arg(device).arg("dump").output();
+
+    let output = match res_output {
+        Ok(output) => output,
+        Err(err) => {
+            return Err(Error::Generic(format!("wg show {} dump failed: {}", device, err)));
         }
+    };
+
+    if !output.status.success() {
+        return Err(Error::Generic(format!("wg show dump failed: {:?}", output)));
     }
 
-    pub fn dump(&self) -> Result<Dump, DumpError> {
-        let res_output = Command::new("wg").arg("show").arg(&self.device).arg("dump").output();
-
-        let output = match res_output {
-            Ok(output) => output,
-            Err(err) => {
-                return Err(DumpError::Generic(format!(
-                    "wg show {} dump failed: {}",
-                    &self.device, err
-                )));
-            }
-        };
-
-        if !output.status.success() {
-            return Err(DumpError::Generic(format!("wg show dump failed: {:?}", output)));
+    let content = match String::from_utf8(output.stdout) {
+        Ok(content) => content,
+        Err(err) => {
+            return Err(Error::Generic(format!("error parsing wg show output: {}", err)));
         }
+    };
 
-        let content = match String::from_utf8(output.stdout) {
-            Ok(content) => content,
-            Err(err) => {
-                return Err(DumpError::Generic(format!("error parsing wg show output: {}", err)));
-            }
-        };
-
-        let lines: Vec<&str> = content.split('\n').collect();
-        if lines.len() == 0 {
-            return Err(DumpError::NoOutputLines);
-        }
-
-        dump_from_lines(&lines)
+    let lines: Vec<&str> = content.split('\n').collect();
+    if lines.len() == 0 {
+        return Err(Error::NoOutputLines);
     }
+
+    dump_from_lines(&lines)
 }
 
-fn dump_from_lines(lines: &Vec<&str>) -> Result<Dump, DumpError> {
+fn dump_from_lines(lines: &Vec<&str>) -> Result<Dump, Error> {
     let initial_line = lines[0];
     let initial_parts: Vec<&str> = initial_line.split('\t').collect();
 
     if initial_parts.len() != 4 {
-        return Err(DumpError::WrongNumberOfFieldsInServerLine);
+        return Err(Error::WrongNumberOfFieldsInServerLine);
     }
 
     let private_key = initial_parts[0].to_string();
@@ -92,7 +75,7 @@ fn dump_from_lines(lines: &Vec<&str>) -> Result<Dump, DumpError> {
     })
 }
 
-fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, DumpError> {
+fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
     lines
         .iter()
         .skip(1)
@@ -103,7 +86,7 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, DumpError> {
         .filter(|parts| parts.len() > 1)
         .map(|parts| {
             if parts.len() != 8 {
-                return Err(DumpError::WrongNumberOfFieldsInPeerLine);
+                return Err(Error::WrongNumberOfFieldsInPeerLine);
             }
 
             let public_key = parts[0].to_string();
@@ -114,7 +97,7 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, DumpError> {
             let ip = match res_ip {
                 Ok(ip) => ip,
                 Err(err) => {
-                    return Err(DumpError::Generic(format!(
+                    return Err(Error::Generic(format!(
                         "unable to parse ip from allowed_ips[{}]: {}",
                         allowed_ips, err
                     )))

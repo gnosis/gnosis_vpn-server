@@ -1,8 +1,8 @@
 use serde::Serialize;
 
+use crate::dump;
+use crate::dump::{Dump, Peer};
 use crate::ops::Ops;
-use crate::wg_server;
-use crate::wg_server::{Dump, Peer};
 
 #[derive(Debug, Serialize)]
 pub struct Status {
@@ -17,7 +17,7 @@ pub struct Status {
 #[derive(Debug, Serialize)]
 pub enum Error {
     NoDevice,
-    DumpError(wg_server::DumpError),
+    DumpError(dump::Error),
 }
 
 pub fn status(ops: &Ops) -> Result<Status, Error> {
@@ -25,8 +25,7 @@ pub fn status(ops: &Ops) -> Result<Status, Error> {
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let wg_server = wg_server::WgServer::new(device);
-    let dump = wg_server.dump().map_err(Error::DumpError)?;
+    let dump = dump::dump(device).map_err(Error::DumpError)?;
     let status = Status::from_dump(&dump, &ops);
     Ok(status)
 }

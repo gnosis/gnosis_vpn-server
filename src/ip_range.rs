@@ -10,10 +10,6 @@ pub struct IpRange {
 }
 
 impl IpRange {
-    pub fn new(start: Ipv4Addr, end: Ipv4Addr) -> Self {
-        IpRange { start, end }
-    }
-
     pub fn count(&self) -> u32 {
         let start = u32::from(self.start);
         let end = u32::from(self.end);

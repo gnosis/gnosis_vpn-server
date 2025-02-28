@@ -1,5 +1,10 @@
-use std::net::{Ipv4Addr, SocketAddr};
 use serde::Serialize;
+use std::collections::HashSet;
+use std::net::Ipv4Addr;
+use std::process::Command;
+
+use crate::dump;
+use crate::ops::Ops;
 
 #[derive(Debug, Serialize)]
 pub struct Register {
@@ -7,60 +12,53 @@ pub struct Register {
 }
 
 #[derive(Debug, Serialize)]
-pub enum Error {}
+pub enum Error {
+    NoDevice,
+    NoFreeIp,
+    Generic(String),
+    DumpError(dump::Error),
+}
 
-
-    pub fn register(&mut self, ops: &Ops, public_key: &str) -> Result<Ipv4Addr, RegisterError> {
-        let dump = self.dump().map_err(RegisterError::Generic)?;
-        let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
-        if let Some(peer) = res_peer {
-            return Ok(peer.ip);
-        }
-
-        let existing_ips: HashSet<Ipv4Addr> = HashSet::from_iter(dump.peers.iter().map(|peer| peer.ip));
-        let res_ip = ops.client_address_range.find_free_ip(&existing_ips, &mut self.rng);
-        let ip = match res_ip {
-            Some(ip) => ip,
-            None => return Err(RegisterError::NoFreeIp),
-        };
-
-        let output = Command::new("wg")
-            .arg("set")
-            .arg(&self.device)
-            .arg("peer")
-            .arg(public_key)
-            .arg("allowed-ips")
-            .arg(format!("{}/32", ip))
-            .output()
-            .with_context(|| format!("error executing wg set peer {} allowed-ips {}/32", public_key, ip))
-            .map_err(RegisterError::Generic)?;
-
-        if output.status.success() {
-            Ok(ip)
-        } else {
-            Err(RegisterError::Generic(format!(
-                "wg set peer {} allowed-ips {}/32 failed: {:?}",
-                public_key, ip, output
-            ))))
-        }
+pub fn register(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Result<Register, Error> {
+    let device = match ops.device() {
+        Some(device) => device,
+        None => return Err(Error::NoDevice),
+    };
+    let dump = dump::dump(device).map_err(Error::DumpError)?;
+    let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
+    if let Some(peer) = res_peer {
+        return Ok(Register { ip: peer.ip });
     }
-            let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
-            let mut wg_server = wg_server::WgServer::new(device);
-            let result = wg_server.register(&ops, &public_key);
-            match result {
-                Ok(ip) => {
-                    if json {
-                        println!("{{\"ip\": \"{}\"}}", ip);
-                    } else {
-                        println!("{}", ip);
-                    }
-                }
-                Err(err) => match err {
-                    wg_server::RegisterError::NoFreeIp => {
-                        println!("no free IP available");
-                    }
-                    wg_server::RegisterError::Generic(err) => {
-                        eprintln!("error: {}", err);
-                    }
-                },
-            }
+
+    let existing_ips: HashSet<Ipv4Addr> = HashSet::from_iter(dump.peers.iter().map(|peer| peer.ip));
+    let res_ip = ops.client_address_range.find_free_ip(&existing_ips, rng);
+    let ip = match res_ip {
+        Some(ip) => ip,
+        None => return Err(Error::NoFreeIp),
+    };
+
+    let res_output = Command::new("wg")
+        .arg("set")
+        .arg(device)
+        .arg("peer")
+        .arg(public_key)
+        .arg("allowed-ips")
+        .arg(format!("{}/32", ip))
+        .output();
+
+    let output = match res_output {
+        Ok(output) => output,
+        Err(err) => {
+            return Err(Error::Generic(format!(
+                "wg set peer {} allowed-ips {}/32 failed: {}",
+                public_key, ip, err
+            )));
+        }
+    };
+
+    if output.status.success() {
+        Ok(Register { ip })
+    } else {
+        Err(Error::Generic(format!("wg set peer failed: {:?}", output)))
+    }
+}
