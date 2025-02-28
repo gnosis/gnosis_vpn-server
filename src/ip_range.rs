@@ -1,4 +1,6 @@
+use rand::seq::IndexedRandom;
 use serde::{Deserialize, Deserializer, Serialize};
+use std::collections::HashSet;
 use std::net::Ipv4Addr;
 
 #[derive(Serialize, Clone, Debug)]
@@ -8,6 +10,10 @@ pub struct IpRange {
 }
 
 impl IpRange {
+    pub fn new(start: Ipv4Addr, end: Ipv4Addr) -> Self {
+        IpRange { start, end }
+    }
+
     pub fn count(&self) -> u32 {
         let start = u32::from(self.start);
         let end = u32::from(self.end);
@@ -19,6 +25,18 @@ impl IpRange {
         let start = u32::from(self.start);
         let end = u32::from(self.end);
         ip >= start && ip <= end
+    }
+
+    pub fn find_free_ip(&self, taken_ips: &HashSet<Ipv4Addr>, rand: &mut rand::rngs::ThreadRng) -> Option<Ipv4Addr> {
+        let start_u32 = u32::from(self.start);
+        let end_u32 = u32::from(self.end);
+
+        let available_ips: Vec<Ipv4Addr> = (start_u32..=end_u32)
+            .filter(|&ip_u32| !taken_ips.contains(&Ipv4Addr::from(ip_u32)))
+            .map(Ipv4Addr::from)
+            .collect();
+
+        available_ips.choose(rand).copied()
     }
 }
 

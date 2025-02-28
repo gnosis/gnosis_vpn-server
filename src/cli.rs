@@ -31,6 +31,17 @@ pub enum Command {
         #[arg(long)]
         json: bool,
     },
+
+    /// Register new client and return it's assigned IP
+    #[command()]
+    Register {
+        /// client public key
+        #[arg(short, long, required = true)]
+        public_key: String,
+        /// format output as json
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 pub fn parse() -> Cli {

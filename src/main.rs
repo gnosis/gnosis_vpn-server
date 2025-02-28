@@ -52,14 +52,33 @@ async fn main() -> Result<()> {
             let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
         }
         Command::Status { json } => {
-            let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
-            let wg_server = wg_server::WgServer::new(device);
-            let dump = wg_server.dump().context("failed to determine wg show dump")?;
-            let status = status::Status::from_dump(&dump, &ops);
+            let status = status::status(&ops);
             if json {
                 println!("{}", serde_json::to_string_pretty(&status)?);
             } else {
                 println!("{:?}", status);
+            }
+        }
+        Command::Register { public_key, json } => {
+            let device = ops.device().ok_or(anyhow::anyhow!("failed to determine device name"))?;
+            let mut wg_server = wg_server::WgServer::new(device);
+            let result = wg_server.register(&ops, &public_key);
+            match result {
+                Ok(ip) => {
+                    if json {
+                        println!("{{\"ip\": \"{}\"}}", ip);
+                    } else {
+                        println!("{}", ip);
+                    }
+                }
+                Err(err) => match err {
+                    wg_server::RegisterError::NoFreeIp => {
+                        println!("no free IP available");
+                    }
+                    wg_server::RegisterError::Generic(err) => {
+                        eprintln!("error: {}", err);
+                    }
+                },
             }
         }
     }

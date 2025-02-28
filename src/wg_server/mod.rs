@@ -1,4 +1,4 @@
-use anyhow::{bail, Context, Error};
+use serde::Serialize;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::process::Command;
 
@@ -9,10 +9,10 @@ mod peer;
 #[derive(Debug)]
 pub struct WgServer {
     device: String,
+    rng: rand::rngs::ThreadRng,
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Dump {
     private_key: String,
     public_key: String,
@@ -21,38 +21,61 @@ pub struct Dump {
     pub peers: Vec<Peer>,
 }
 
+#[derive(Debug, Serialize)]
+pub enum DumpError {
+    Generic(String),
+    NoOutputLines,
+    WrongNumberOfFieldsInServerLine,
+    WrongNumberOfFieldsInPeerLine,
+}
+
 impl WgServer {
     pub fn new(device: &str) -> WgServer {
         WgServer {
             device: device.to_string(),
+            rng: rand::rng(),
         }
     }
 
-    pub fn dump(&self) -> Result<Dump, Error> {
-        let output = Command::new("wg")
-            .arg("show")
-            .arg(&self.device)
-            .arg("dump")
-            .output()
-            .with_context(|| format!("wg show {} dump failed", &self.device))?;
+    pub fn dump(&self) -> Result<Dump, DumpError> {
+        let res_output = Command::new("wg").arg("show").arg(&self.device).arg("dump").output();
+
+        let output = match res_output {
+            Ok(output) => output,
+            Err(err) => {
+                return Err(DumpError::Generic(format!(
+                    "wg show {} dump failed: {}",
+                    &self.device, err
+                )));
+            }
+        };
+
         if !output.status.success() {
-            bail!("wg show dump failed: {:?}", output);
+            return Err(DumpError::Generic(format!("wg show dump failed: {:?}", output)));
         }
-        let content = String::from_utf8(output.stdout).context("unable to convert output to string")?;
+
+        let content = match String::from_utf8(output.stdout) {
+            Ok(content) => content,
+            Err(err) => {
+                return Err(DumpError::Generic(format!("error parsing wg show output: {}", err)));
+            }
+        };
+
         let lines: Vec<&str> = content.split('\n').collect();
-        if lines.len() < 2 {
-            bail!("insufficient output lines from wg show dump");
+        if lines.len() == 0 {
+            return Err(DumpError::NoOutputLines);
         }
+
         dump_from_lines(&lines)
     }
 }
 
-fn dump_from_lines(lines: &Vec<&str>) -> Result<Dump, Error> {
+fn dump_from_lines(lines: &Vec<&str>) -> Result<Dump, DumpError> {
     let initial_line = lines[0];
     let initial_parts: Vec<&str> = initial_line.split('\t').collect();
 
     if initial_parts.len() != 4 {
-        bail!("unexpected number of fields in starting line");
+        return Err(DumpError::WrongNumberOfFieldsInServerLine);
     }
 
     let private_key = initial_parts[0].to_string();
@@ -69,7 +92,7 @@ fn dump_from_lines(lines: &Vec<&str>) -> Result<Dump, Error> {
     })
 }
 
-fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
+fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, DumpError> {
     lines
         .iter()
         .skip(1)
@@ -80,8 +103,9 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
         .filter(|parts| parts.len() > 1)
         .map(|parts| {
             if parts.len() != 8 {
-                bail!("unexpected number of fields in peer line: {:?}", parts);
+                return Err(DumpError::WrongNumberOfFieldsInPeerLine);
             }
+
             let public_key = parts[0].to_string();
             let preshared_key = parts[1].to_string();
             let endpoint = parts[2].parse::<SocketAddr>().ok();
@@ -89,8 +113,14 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
             let res_ip = allowed_ips.split("/32").take(1).collect::<String>().parse::<Ipv4Addr>();
             let ip = match res_ip {
                 Ok(ip) => ip,
-                Err(err) => bail!("unable to parse ip from allowed_ips[{}]: {}", allowed_ips, err),
+                Err(err) => {
+                    return Err(DumpError::Generic(format!(
+                        "unable to parse ip from allowed_ips[{}]: {}",
+                        allowed_ips, err
+                    )))
+                }
             };
+
             let latest_handshake = parts[4].parse::<u64>().unwrap_or_default();
             let transfer_rx = parts[5].parse::<u64>().unwrap_or_default();
             let transfer_tx = parts[6].parse::<u64>().unwrap_or_default();

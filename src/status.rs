@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use crate::ops::Ops;
+use crate::wg_server;
 use crate::wg_server::{Dump, Peer};
 
 #[derive(Debug, Serialize)]
@@ -11,6 +12,23 @@ pub struct Status {
     pub expired_clients: u32,
     pub never_connected_clients: u32,
     pub clients_outside_of_slots_range: u32,
+}
+
+#[derive(Debug, Serialize)]
+pub enum Error {
+    NoDevice,
+    DumpError(wg_server::DumpError),
+}
+
+pub fn status(ops: &Ops) -> Result<Status, Error> {
+    let device = match ops.device() {
+        Some(device) => device,
+        None => return Err(Error::NoDevice),
+    };
+    let wg_server = wg_server::WgServer::new(device);
+    let dump = wg_server.dump().map_err(Error::DumpError)?;
+    let status = Status::from_dump(&dump, &ops);
+    Ok(status)
 }
 
 impl Status {
