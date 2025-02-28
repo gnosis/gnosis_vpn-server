@@ -36,7 +36,6 @@ pub enum Command {
     #[command()]
     Register {
         /// client public key
-        #[arg(short, long, required = true)]
         public_key: String,
         /// format output as json
         #[arg(long)]
