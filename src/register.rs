@@ -16,7 +16,7 @@ pub enum Error {
     NoDevice,
     NoFreeIp,
     Generic(String),
-    DumpError(dump::Error),
+    Dump(dump::Error),
 }
 
 pub fn register(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Result<Register, Error> {
@@ -24,7 +24,7 @@ pub fn register(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) ->
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let dump = dump::dump(device).map_err(Error::DumpError)?;
+    let dump = dump::dump(device).map_err(Error::Dump)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     if let Some(peer) = res_peer {
         return Ok(Register { ip: peer.ip });

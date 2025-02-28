@@ -45,8 +45,14 @@ pub fn dump(device: &str) -> Result<Dump, Error> {
         }
     };
 
-    let lines: Vec<&str> = content.split('\n').collect();
-    if lines.len() == 0 {
+    let output_lines: Vec<&str> = content.split('\n').collect();
+    let lines: Vec<&str> = output_lines
+        .iter()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect();
+
+    if lines.is_empty() {
         return Err(Error::NoOutputLines);
     }
 
