@@ -24,7 +24,7 @@ pub enum Error {
     WrongNumberOfFieldsInPeerLine,
 }
 
-pub fn dump(device: &str) -> Result<Dump, Error> {
+pub fn run(device: &str) -> Result<Dump, Error> {
     let res_output = Command::new("wg").arg("show").arg(device).arg("dump").output();
 
     let output = match res_output {

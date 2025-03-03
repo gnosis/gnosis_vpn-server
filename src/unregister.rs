@@ -9,7 +9,7 @@ pub enum Error {
     Generic(String),
 }
 
-pub fn unregister(ops: &Ops, public_key: &str) -> Result<(), Error> {
+pub fn run(ops: &Ops, public_key: &str) -> Result<(), Error> {
     let device = match ops.device() {
         Some(device) => device,
         None => return Err(Error::NoDevice),

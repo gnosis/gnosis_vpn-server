@@ -19,7 +19,7 @@ pub enum Error {
     Dump(dump::Error),
 }
 
-pub fn register(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Result<Register, Error> {
+pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Result<Register, Error> {
     let device = match ops.device() {
         Some(device) => device,
         None => return Err(Error::NoDevice),

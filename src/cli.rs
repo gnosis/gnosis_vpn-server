@@ -32,7 +32,7 @@ pub enum Command {
         json: bool,
     },
 
-    /// Register new client and return it's assigned IP
+    /// Register new client and return assigned IP
     #[command()]
     Register {
         /// client public key
@@ -47,6 +47,17 @@ pub enum Command {
     Unregister {
         /// client public key
         public_key: String,
+        /// format output as json
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Remove expired clients that have been connected before
+    #[command()]
+    RemoveExpired {
+        /// overwrite configured or default client handshake timeout
+        #[arg(long)]
+        client_handshake_timeout_s: Option<u64>,
         /// format output as json
         #[arg(long)]
         json: bool,

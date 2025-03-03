@@ -17,6 +17,7 @@ mod dump;
 mod ip_range;
 mod ops;
 mod register;
+mod remove_expired;
 mod status;
 mod unregister;
 
@@ -56,7 +57,7 @@ async fn main() -> Result<()> {
         }
 
         Command::Status { json } => {
-            let status = status::status(&ops);
+            let status = status::run(&ops);
             match status {
                 Ok(status) => {
                     if json {
@@ -78,7 +79,7 @@ async fn main() -> Result<()> {
 
         Command::Register { public_key, json } => {
             let mut rng = rand::rng();
-            let register = register::register(&ops, &mut rng, &public_key);
+            let register = register::run(&ops, &mut rng, &public_key);
             match register {
                 Ok(register) => {
                     if json {
@@ -99,12 +100,36 @@ async fn main() -> Result<()> {
         }
 
         Command::Unregister { public_key, json } => {
-            let unregister = unregister::unregister(&ops, &public_key);
+            let unregister = unregister::run(&ops, &public_key);
             match unregister {
                 Ok(_) => {
                     // there is no output for this command
                     if json {
                         println!("{{}}")
+                    }
+                }
+                Err(err) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
+                    }
+                    process::exit(1);
+                }
+            }
+        }
+
+        Command::RemoveExpired {
+            client_handshake_timeout_s,
+            json,
+        } => {
+            let remove_expired = remove_expired::run(&ops, &client_handshake_timeout_s);
+            match remove_expired {
+                Ok(remove_expired) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&remove_expired)?);
+                    } else {
+                        println!("{:?}", remove_expired);
                     }
                 }
                 Err(err) => {

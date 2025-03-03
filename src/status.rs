@@ -20,7 +20,7 @@ pub enum Error {
     Dump(dump::Error),
 }
 
-pub fn status(ops: &Ops) -> Result<Status, Error> {
+pub fn run(ops: &Ops) -> Result<Status, Error> {
     let device = match ops.device() {
         Some(device) => device,
         None => return Err(Error::NoDevice),
