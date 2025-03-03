@@ -18,6 +18,7 @@ mod ip_range;
 mod ops;
 mod register;
 mod status;
+mod unregister;
 
 #[get("/")]
 fn index() -> &'static str {
@@ -92,6 +93,17 @@ async fn main() -> Result<()> {
                     } else {
                         println!("{:?}", err);
                     }
+                    process::exit(1);
+                }
+            }
+        }
+
+        Command::Unregister { public_key } => {
+            let unregister = unregister::unregister(&ops, &public_key);
+            match unregister {
+                Ok(_) => {}
+                Err(err) => {
+                    println!("{:?}", err);
                     process::exit(1);
                 }
             }

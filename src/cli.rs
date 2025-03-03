@@ -41,6 +41,13 @@ pub enum Command {
         #[arg(long)]
         json: bool,
     },
+
+    /// Unregister client
+    #[command()]
+    Unregister {
+        /// client public key
+        public_key: String,
+    },
 }
 
 pub fn parse() -> Cli {

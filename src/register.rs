@@ -59,6 +59,6 @@ pub fn register(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) ->
     if output.status.success() {
         Ok(Register { ip })
     } else {
-        Err(Error::Generic(format!("wg set peer failed: {:?}", output)))
+        Err(Error::Generic(format!("wg add peer failed: {:?}", output)))
     }
 }
