@@ -47,6 +47,9 @@ pub enum Command {
     Unregister {
         /// client public key
         public_key: String,
+        /// format output as json
+        #[arg(long)]
+        json: bool,
     },
 }
 

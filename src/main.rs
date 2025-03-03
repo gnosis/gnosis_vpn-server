@@ -98,12 +98,21 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::Unregister { public_key } => {
+        Command::Unregister { public_key, json } => {
             let unregister = unregister::unregister(&ops, &public_key);
             match unregister {
-                Ok(_) => {}
+                Ok(_) => {
+                    // there is no output for this command
+                    if json {
+                        println!("{{}}")
+                    }
+                }
                 Err(err) => {
-                    println!("{:?}", err);
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
+                    }
                     process::exit(1);
                 }
             }
