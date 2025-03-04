@@ -22,6 +22,7 @@ pub enum Error {
     Generic(String),
     Dump(dump::Error),
     Unregister(unregister::Error),
+    SystemTime(SystemTimeError),
 }
 
 pub fn expired(ops: &Ops, client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
@@ -38,6 +39,12 @@ pub fn expired(ops: &Ops, client_handshake_timeout_s: &Option<u64>) -> Result<Re
         .iter()
         .map(|peer| (peer.has_handshaked(), peer.timed_out(&client_handshake_timeout)))
         .partition::<Vec<_>, _>(|(_good, bad)| bad.is_ok());
+
+    if !bad_peers.is_empty() {
+        for (_, err) in bad_peers {
+            return eprintln!("Peer {} timed out: {:?}", peer.public_key, err);
+        }
+    }
 
     for p in &peers {
         unregister::run(ops, &p.public_key).map_err(Error::Unregister)?
