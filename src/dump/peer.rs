@@ -1,6 +1,5 @@
-use anyhow::{Context, Error};
 use std::net::{Ipv4Addr, SocketAddr};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -16,10 +15,8 @@ pub struct Peer {
 }
 
 impl Peer {
-    pub fn timed_out(&self, timeout: &Duration) -> Result<bool, Error> {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .context("failed to get current time")?;
+    pub fn timed_out(&self, timeout: &Duration) -> Result<bool, SystemTimeError> {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?;
         let dur = Duration::from_micros(self.latest_handshake);
         let valid = dur + *timeout > now;
         Ok(!valid)

@@ -17,7 +17,7 @@ mod dump;
 mod ip_range;
 mod ops;
 mod register;
-mod remove_expired;
+mod remove;
 mod status;
 mod unregister;
 
@@ -123,13 +123,34 @@ async fn main() -> Result<()> {
             client_handshake_timeout_s,
             json,
         } => {
-            let remove_expired = remove_expired::run(&ops, &client_handshake_timeout_s);
+            let remove_expired = remove::expired(&ops, &client_handshake_timeout_s);
             match remove_expired {
                 Ok(remove_expired) => {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&remove_expired)?);
                     } else {
                         println!("{:?}", remove_expired);
+                    }
+                }
+                Err(err) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
+                    }
+                    process::exit(1);
+                }
+            }
+        }
+
+        Command::RemoveNeverConnected { json } => {
+            let remove_never_connected = remove::never_connected(&ops);
+            match remove_never_connected {
+                Ok(remove_never_connected) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&remove_never_connected)?);
+                    } else {
+                        println!("{:?}", remove_never_connected);
                     }
                 }
                 Err(err) => {

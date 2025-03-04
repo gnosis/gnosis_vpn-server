@@ -62,6 +62,14 @@ pub enum Command {
         #[arg(long)]
         json: bool,
     },
+
+    /// Remove clients that registered but never connected
+    #[command()]
+    RemoveNeverConnected {
+        /// format output as json
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 pub fn parse() -> Cli {
