@@ -23,7 +23,7 @@ impl IpRange {
         ip >= start && ip <= end
     }
 
-    pub fn find_free_ip(&self, taken_ips: &HashSet<Ipv4Addr>, rand: &mut rand::rngs::ThreadRng) -> Option<Ipv4Addr> {
+    pub fn find_free_ip(&self, taken_ips: &HashSet<Ipv4Addr>, rand: &mut rand::rngs::StdRng) -> Option<Ipv4Addr> {
         let start_u32 = u32::from(self.start);
         let end_u32 = u32::from(self.end);
 
