@@ -8,9 +8,8 @@
 
 # make sure anything which is vendored is copied
 !/vendor/**/*
-result*
 
+result
 
 # Added by cargo
-
 /target

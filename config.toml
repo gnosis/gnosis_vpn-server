@@ -1,0 +1,9 @@
+# IP range of allowed VPN clients
+allowed_client_ips = { start = "10.128.0.2", end = "10.128.0.10" }
+# wg server configuration path
+wireguard_config_path = "./wggnosisvpn.conf"
+
+# [optional] server endpoint
+# endpoint = "127.0.0.1:8000"
+# [optional] last handshake removal timeout
+# client_handshake_timeout_s = 320
