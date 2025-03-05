@@ -6,9 +6,9 @@ use crate::ops::Ops;
 
 #[derive(Debug, Serialize)]
 pub struct Status {
-    pub slots: IpSlots,
-    pub public_keys: PublicKeys,
-    pub clients_outside_of_slots_range: u32,
+    slots: IpSlots,
+    public_keys: PublicKeys,
+    clients_outside_of_slots_range: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -17,14 +17,14 @@ pub struct IpSlots {
     free: u32,
     healthy: u32,
     expired: u32,
-    neverConnected: u32,
+    never_connected: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct PublicKeys {
     healthy: Vec<String>,
     expired: Vec<String>,
-    neverConnected: Vec<String>,
+    never_connected: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -67,7 +67,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
             if let Ok(timed_out) = res_timed_out {
                 return !*timed_out;
             }
-            return false;
+            false
         });
 
     let total = ops.client_address_range.count();
@@ -76,7 +76,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
         free: total - inside.len() as u32,
         healthy: healthy_good_public_keys.len() as u32,
         expired: expired_good_public_keys.len() as u32,
-        neverConnected: never_connected_peers.len() as u32,
+        never_connected: never_connected_peers.len() as u32,
     };
 
     let public_keys = PublicKeys {
@@ -88,7 +88,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
             .iter()
             .map(|(public_key, _)| public_key.clone())
             .collect(),
-        neverConnected: never_connected_peers
+        never_connected: never_connected_peers
             .iter()
             .map(|peer| peer.public_key.clone())
             .collect(),

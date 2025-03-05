@@ -4,12 +4,17 @@ use std::process::Command;
 use crate::ops::Ops;
 
 #[derive(Debug, Serialize)]
+pub struct Unregister {
+    public_key: String,
+}
+
+#[derive(Debug, Serialize)]
 pub enum Error {
     NoDevice,
     Generic(String),
 }
 
-pub fn run(ops: &Ops, public_key: &str) -> Result<(), Error> {
+pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
     let device = match ops.device() {
         Some(device) => device,
         None => return Err(Error::NoDevice),
@@ -34,7 +39,9 @@ pub fn run(ops: &Ops, public_key: &str) -> Result<(), Error> {
     };
 
     if output.status.success() {
-        Ok(())
+        Ok(Unregister {
+            public_key: public_key.to_string(),
+        })
     } else {
         Err(Error::Generic(format!("wg remove peer failed: {:?}", output)))
     }

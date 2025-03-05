@@ -7,20 +7,19 @@ use crate::unregister;
 
 #[derive(Debug, Serialize)]
 pub struct RemoveExpired {
-    RemovedPublicKeys: Vec<String>,
-    Total: u32,
+    expired_public_keys: Vec<String>,
+    total: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct RemoveNeverConnected {
-    RemovedPublicKeys: Vec<String>,
-    Total: u32,
+    never_connected_public_keys: Vec<String>,
+    total: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub enum Error {
     NoDevice,
-    Generic(String),
     Dump(dump::Error),
     Unregister(unregister::Error),
     SystemTime(String),
@@ -55,18 +54,18 @@ pub fn expired(ops: &Ops, client_handshake_timeout_s: &Option<u64>) -> Result<Re
             if let Ok(timed_out) = res_timed_out {
                 return *timed_out;
             }
-            return false;
+            false
         })
         .map(|(public_key, _)| public_key)
         .collect::<Vec<&String>>();
 
     for key in &public_keys {
-        unregister::run(ops, &key).map_err(Error::Unregister)?
+        let _ = unregister::run(ops, key).map_err(Error::Unregister)?;
     }
 
     Ok(RemoveExpired {
-        RemovedPublicKeys: public_keys.iter().map(|s| s.to_string()).collect(),
-        Total: public_keys.len() as u32,
+        expired_public_keys: public_keys.iter().map(|s| s.to_string()).collect(),
+        total: public_keys.len() as u32,
     })
 }
 
@@ -83,10 +82,10 @@ pub fn never_connected(ops: &Ops) -> Result<RemoveNeverConnected, Error> {
         .map(|peer| &peer.public_key)
         .collect::<Vec<&String>>();
     for key in &public_keys {
-        unregister::run(ops, &key).map_err(Error::Unregister)?
+        let _ = unregister::run(ops, key).map_err(Error::Unregister)?;
     }
     Ok(RemoveNeverConnected {
-        RemovedPublicKeys: public_keys.iter().map(|s| s.to_string()).collect(),
-        Total: public_keys.len() as u32,
+        never_connected_public_keys: public_keys.iter().map(|s| s.to_string()).collect(),
+        total: public_keys.len() as u32,
     })
 }

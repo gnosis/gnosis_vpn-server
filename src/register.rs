@@ -8,7 +8,8 @@ use crate::ops::Ops;
 
 #[derive(Debug, Serialize)]
 pub struct Register {
-    pub ip: Ipv4Addr,
+    public_key: String,
+    ip: Ipv4Addr,
 }
 
 #[derive(Debug, Serialize)]
@@ -24,10 +25,13 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let dump = dump::dump(device).map_err(Error::Dump)?;
+    let dump = dump::run(device).map_err(Error::Dump)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     if let Some(peer) = res_peer {
-        return Ok(Register { ip: peer.ip });
+        return Ok(Register {
+            public_key: peer.public_key.clone(),
+            ip: peer.ip,
+        });
     }
 
     let existing_ips: HashSet<Ipv4Addr> = HashSet::from_iter(dump.peers.iter().map(|peer| peer.ip));
@@ -57,7 +61,10 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
     };
 
     if output.status.success() {
-        Ok(Register { ip })
+        Ok(Register {
+            public_key: public_key.to_string(),
+            ip,
+        })
     } else {
         Err(Error::Generic(format!("wg add peer failed: {:?}", output)))
     }
