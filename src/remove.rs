@@ -2,19 +2,18 @@ use serde::Serialize;
 use std::time::Duration;
 
 use crate::dump;
-use crate::dump::Peer;
 use crate::ops::Ops;
 use crate::unregister;
 
 #[derive(Debug, Serialize)]
 pub struct RemoveExpired {
-    Removed: Vec<String>,
+    RemovedPublicKeys: Vec<String>,
     Total: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct RemoveNeverConnected {
-    Removed: Vec<String>,
+    RemovedPublicKeys: Vec<String>,
     Total: u32,
 }
 
@@ -41,13 +40,12 @@ pub fn expired(ops: &Ops, client_handshake_timeout_s: &Option<u64>) -> Result<Re
         .iter()
         .filter(|peer| peer.has_handshaked())
         .map(|peer| (peer.public_key.clone(), peer.timed_out(&client_handshake_timeout)))
-        .partition::<Vec<_>, _>(|(_good, bad)| bad.is_ok());
+        .partition::<Vec<_>, _>(|(_, res_timed_out)| res_timed_out.is_ok());
 
-    if !bad_peers.is_empty() {
-        for (_, err) in bad_peers {
-            if let Ok(err) = err {
-                return Err(Error::SystemTime(err.to_string()));
-            }
+    // fail if any system time error occured
+    for (_, err) in bad_peers {
+        if let Err(err) = err {
+            return Err(Error::SystemTime(err.to_string()));
         }
     }
 
@@ -67,7 +65,7 @@ pub fn expired(ops: &Ops, client_handshake_timeout_s: &Option<u64>) -> Result<Re
     }
 
     Ok(RemoveExpired {
-        Removed: public_keys.iter().map(|s| s.to_string()).collect(),
+        RemovedPublicKeys: public_keys.iter().map(|s| s.to_string()).collect(),
         Total: public_keys.len() as u32,
     })
 }
@@ -78,15 +76,17 @@ pub fn never_connected(ops: &Ops) -> Result<RemoveNeverConnected, Error> {
         None => return Err(Error::NoDevice),
     };
     let dump = dump::run(device).map_err(Error::Dump)?;
-    let peers = dump
+    let public_keys = dump
         .peers
         .iter()
         .filter(|peer| !peer.has_handshaked())
-        .collect::<Vec<&Peer>>();
-    for p in &peers {
-        unregister::run(ops, &p.public_key).map_err(Error::Unregister)?
+        .map(|peer| &peer.public_key)
+        .collect::<Vec<&String>>();
+    for key in &public_keys {
+        unregister::run(ops, &key).map_err(Error::Unregister)?
     }
     Ok(RemoveNeverConnected {
-        Removed: peers.len() as u32,
+        RemovedPublicKeys: public_keys.iter().map(|s| s.to_string()).collect(),
+        Total: public_keys.len() as u32,
     })
 }
