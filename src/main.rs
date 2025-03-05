@@ -6,12 +6,14 @@ use cli::Command;
 use figment::providers::{Format, Toml};
 use ops::Ops;
 use rocket::figment::Figment;
+use serde::Serialize;
 use std::fs;
 use std::process;
 
 use crate::config::Config;
 
 mod cli;
+mod clients;
 mod config;
 mod dump;
 mod ip_range;
@@ -21,9 +23,19 @@ mod remove;
 mod status;
 mod unregister;
 
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+#[derive(Debug, Serialize)]
+struct Catchall {
+    status: u16,
+    reason: String,
+}
+
+#[catch(default)]
+fn default_catcher(status: rocket::http::Status, _request: &rocket::Request) -> String {
+    let resp = Catchall {
+        status: status.code,
+        reason: status.reason().unwrap_or_default().to_string(),
+    };
+    serde_json::to_string_pretty(&resp).unwrap()
 }
 
 #[rocket::main]
@@ -37,7 +49,9 @@ async fn main() -> Result<()> {
 
     match args.command {
         Command::Serve {} => {
-            println!(
+            // install global collector configured based on RUST_LOG env var.
+            tracing_subscriber::fmt::init();
+            tracing::info!(
                 "serving {name} v{version} on {ip}:{port}",
                 name = env!("CARGO_PKG_NAME"),
                 version = env!("CARGO_PKG_VERSION"),
@@ -53,7 +67,12 @@ async fn main() -> Result<()> {
                 port = ops.rocket_port
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
-            let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
+            let _rocket = rocket::custom(figment)
+                .register("/", catchers![default_catcher])
+                .manage(ops)
+                .mount("/api/v1/clients", routes![clients::register, clients::unregister])
+                .launch()
+                .await?;
         }
 
         Command::Status { json } => {
