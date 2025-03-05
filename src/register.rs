@@ -1,3 +1,5 @@
+use rocket::serde::{json::Json, Deserialize};
+use rocket::State;
 use serde::Serialize;
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
@@ -18,6 +20,17 @@ pub enum Error {
     NoFreeIp,
     Generic(String),
     Dump(dump::Error),
+}
+
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct Input {
+    public_key: String,
+}
+
+#[post("/register", data = "<input>")]
+pub fn api(input: Json<Input>, state: &State<super::InternalState>) -> String {
+    format!("registering peer with public key: {}", input.public_key)
 }
 
 pub fn run(ops: &Ops, rng: &mut rand::rngs::StdRng, public_key: &str) -> Result<Register, Error> {

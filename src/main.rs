@@ -8,14 +8,12 @@ use ops::Ops;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rocket::figment::Figment;
-use serde::Serialize;
 use std::fs;
 use std::process;
 
 use crate::config::Config;
 
 mod cli;
-mod clients;
 mod config;
 mod dump;
 mod ip_range;
@@ -25,24 +23,9 @@ mod remove;
 mod status;
 mod unregister;
 
-#[derive(Debug, Serialize)]
-struct Catchall {
-    status: u16,
-    reason: String,
-}
-
 struct InternalState {
     ops: Ops,
     rng: StdRng,
-}
-
-#[catch(default)]
-fn default_catcher(status: rocket::http::Status, _request: &rocket::Request) -> String {
-    let resp = Catchall {
-        status: status.code,
-        reason: status.reason().unwrap_or_default().to_string(),
-    };
-    serde_json::to_string_pretty(&resp).unwrap()
 }
 
 #[rocket::main]
@@ -79,9 +62,8 @@ async fn main() -> Result<()> {
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment)
-                .register("/", catchers![default_catcher])
                 .manage(state)
-                .mount("/api/v1/clients", routes![clients::register, clients::unregister])
+                .mount("/api/v1/clients", routes![register::api])
                 .launch()
                 .await?;
         }
