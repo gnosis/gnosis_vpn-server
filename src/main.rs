@@ -5,8 +5,6 @@ use anyhow::{Context, Result};
 use cli::Command;
 use figment::providers::{Format, Toml};
 use ops::Ops;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
 use rocket::figment::Figment;
 use std::fs;
 use std::process;
@@ -23,11 +21,6 @@ mod remove;
 mod status;
 mod unregister;
 
-struct InternalState {
-    ops: Ops,
-    rng: StdRng,
-}
-
 #[rocket::main]
 async fn main() -> Result<()> {
     let args = cli::parse();
@@ -35,11 +28,7 @@ async fn main() -> Result<()> {
     let config_path = args.config_file;
     let content = fs::read_to_string(config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
-
-    let mut state = InternalState {
-        ops: Ops::from(config),
-        rng: StdRng::from_rng(&mut rand::rng()),
-    };
+    let ops = Ops::from(config);
 
     match args.command {
         Command::Serve {} => {
@@ -49,27 +38,27 @@ async fn main() -> Result<()> {
                 "serving {name} v{version} on {ip}:{port}",
                 name = env!("CARGO_PKG_NAME"),
                 version = env!("CARGO_PKG_VERSION"),
-                ip = state.ops.rocket_address,
-                port = state.ops.rocket_port
+                ip = ops.rocket_address,
+                port = ops.rocket_port
             );
             let params = format!(
                 r#"
                 address = "{address}"
                 port = {port}
                 "#,
-                address = state.ops.rocket_address,
-                port = state.ops.rocket_port
+                address = ops.rocket_address,
+                port = ops.rocket_port
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment)
-                .manage(state)
+                .manage(ops)
                 .mount("/api/v1/clients", routes![register::api])
                 .launch()
                 .await?;
         }
 
         Command::Status { json } => {
-            let status = status::run(&state.ops);
+            let status = status::run(&ops);
             match status {
                 Ok(status) => {
                     if json {
@@ -90,7 +79,8 @@ async fn main() -> Result<()> {
         }
 
         Command::Register { public_key, json } => {
-            let register = register::run(&state.ops, &mut state.rng, &public_key);
+            let mut rand = rand::rng();
+            let register = register::run(&ops, &mut rand, &public_key);
             match register {
                 Ok(register) => {
                     if json {
@@ -111,7 +101,7 @@ async fn main() -> Result<()> {
         }
 
         Command::Unregister { public_key, json } => {
-            let unregister = unregister::run(&state.ops, &public_key);
+            let unregister = unregister::run(&ops, &public_key);
             match unregister {
                 Ok(_) => {
                     // there is no output for this command
@@ -134,7 +124,7 @@ async fn main() -> Result<()> {
             client_handshake_timeout_s,
             json,
         } => {
-            let remove_expired = remove::expired(&state.ops, &client_handshake_timeout_s);
+            let remove_expired = remove::expired(&ops, &client_handshake_timeout_s);
             match remove_expired {
                 Ok(remove_expired) => {
                     if json {
@@ -155,7 +145,7 @@ async fn main() -> Result<()> {
         }
 
         Command::RemoveNeverConnected { json } => {
-            let remove_never_connected = remove::never_connected(&state.ops);
+            let remove_never_connected = remove::never_connected(&ops);
             match remove_never_connected {
                 Ok(remove_never_connected) => {
                     if json {

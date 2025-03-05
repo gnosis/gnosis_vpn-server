@@ -29,11 +29,16 @@ pub struct Input {
 }
 
 #[post("/register", data = "<input>")]
-pub fn api(input: Json<Input>, state: &State<super::InternalState>) -> String {
-    format!("registering peer with public key: {}", input.public_key)
+pub fn api(input: Json<Input>, state: &State<Ops>) {
+    let mut rand = rand::rng();
+    let res = run(&state.ops, &mut rand, input.public_key.as_str());
+    match res {
+        Ok(register) => Json(register),
+        Err(err) => Json(err),
+    }
 }
 
-pub fn run(ops: &Ops, rng: &mut rand::rngs::StdRng, public_key: &str) -> Result<Register, Error> {
+pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Result<Register, Error> {
     let device = match ops.device() {
         Some(device) => device,
         None => return Err(Error::NoDevice),
