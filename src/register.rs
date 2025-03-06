@@ -34,10 +34,10 @@ pub struct Input {
 #[post("/register", data = "<input>")]
 pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), Json<ApiError>> {
     let mut rand = rand::rng();
-    let res = run(&ops, &mut rand, input.public_key.as_str());
+    let res = run(ops, &mut rand, input.public_key.as_str());
 
     match res {
-        Ok(reg) if reg.newly_registered == true => Ok((Status::Created, Json(reg))),
+        Ok(reg) if reg.newly_registered => Ok((Status::Created, Json(reg))),
         Ok(reg) => Ok((Status::Ok, Json(reg))),
         Err(Error::NoFreeIp) => Err(Json(ApiError::new(404, "Not Found", "No free IP available"))),
         Err(err) => {

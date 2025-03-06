@@ -60,7 +60,7 @@ pub enum Error {
 
 #[get("/status/<public_key>")]
 pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSingle>, Json<ApiError>> {
-    let res = run_single(&ops, &public_key);
+    let res = run_single(ops, &public_key);
 
     match res {
         Ok(status) => match status.state {
@@ -76,7 +76,7 @@ pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSin
 
 #[get("/status")]
 pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
-    let res = run(&ops);
+    let res = run(ops);
 
     match res {
         Ok(status) => Ok(Json(ApiStatus {

@@ -26,7 +26,7 @@ pub struct Input {
 
 #[post("/unregister", data = "<input>")]
 pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<Status, Json<ApiError>> {
-    let res = run(&ops, input.public_key.as_str());
+    let res = run(ops, input.public_key.as_str());
 
     match res {
         Ok(_unreg) => Ok(Status::NoContent),
