@@ -1,3 +1,4 @@
+use rocket::http::{ContentType, Status};
 use rocket::serde::{json::Json, Deserialize};
 use rocket::State;
 use serde::Serialize;
@@ -8,10 +9,11 @@ use std::process::Command;
 use crate::dump;
 use crate::ops::Ops;
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Register {
     public_key: String,
     ip: Ipv4Addr,
+    newly_registered: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -29,12 +31,31 @@ pub struct Input {
 }
 
 #[post("/register", data = "<input>")]
-pub fn api(input: Json<Input>, state: &State<Ops>) {
+pub fn api(input: Json<Input>, ops: &State<Ops>) -> (Status, (ContentType, String)) {
     let mut rand = rand::rng();
-    let res = run(&state.ops, &mut rand, input.public_key.as_str());
-    match res {
-        Ok(register) => Json(register),
-        Err(err) => Json(err),
+    let res = run(&ops, &mut rand, input.public_key.as_str());
+    let res_with_json = res.map(|reg| (reg.clone(), serde_json::to_string(&reg)));
+    match res_with_json {
+        Ok((reg, Ok(json))) if reg.newly_registered == true => (Status::Created, (ContentType::JSON, json)),
+        Ok((_reg, Ok(json))) => (Status::Ok, (ContentType::JSON, json)),
+        Ok((_reg, Err(err))) => {
+            tracing::error!("Error serializing register: {:?}", err);
+            (
+                Status::InternalServerError,
+                (ContentType::JSON, format!(r#"{{"error": "{}"}}"#, err)),
+            )
+        }
+        Err(Error::NoFreeIp) => (
+            Status::NotFound,
+            (ContentType::JSON, r#"{"error": "No free IP available"}"#.to_string()),
+        ),
+        Err(err) => {
+            tracing::error!("Error during registration: {:?}", err);
+            (
+                Status::InternalServerError,
+                (ContentType::JSON, r#"{{"error": "Internal server error"}}"#.to_string()),
+            )
+        }
     }
 }
 
@@ -49,6 +70,7 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
         return Ok(Register {
             public_key: peer.public_key.clone(),
             ip: peer.ip,
+            newly_registered: false,
         });
     }
 
@@ -82,6 +104,7 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
         Ok(Register {
             public_key: public_key.to_string(),
             ip,
+            newly_registered: true,
         })
     } else {
         Err(Error::Generic(format!("wg add peer failed: {:?}", output)))
