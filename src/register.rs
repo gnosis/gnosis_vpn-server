@@ -1,4 +1,4 @@
-use rocket::http::{ContentType, Status};
+use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
 use serde::{Deserialize, Serialize};
@@ -30,24 +30,51 @@ pub struct Input {
     public_key: String,
 }
 
+/*
+ * keep consistent with default:
+   {
+     "error": {
+        "code": 500,
+        "reason": "Internal Server Error",
+        "description": "The server encountered an internal error while processing this request."
+    }
+*/
+#[derive(Serialize)]
+struct InternalApiError {
+    code: u16,
+    reason: String,
+    description: String,
+}
+
+#[derive(Serialize)]
+pub struct ApiError {
+    error: InternalApiError,
+}
+
 #[post("/register", data = "<input>")]
-pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), (Status, (ContentType, String))> {
+pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), Json<ApiError>> {
     let mut rand = rand::rng();
     let res = run(&ops, &mut rand, input.public_key.as_str());
 
     match res {
         Ok(reg) if reg.newly_registered == true => Ok((Status::Created, Json(reg))),
         Ok(reg) => Ok((Status::Ok, Json(reg))),
-        Err(Error::NoFreeIp) => Err((
-            Status::NotFound,
-            (ContentType::JSON, r#"{"error": "No free IP available"}"#.to_string()),
-        )),
+        Err(Error::NoFreeIp) => Err(Json(ApiError {
+            error: InternalApiError {
+                code: 404,
+                reason: "Not Found".to_string(),
+                description: "No free IP available".to_string(),
+            },
+        })),
         Err(err) => {
             tracing::error!("Error during registration: {:?}", err);
-            Err((
-                Status::InternalServerError,
-                (ContentType::JSON, r#"{"error": "Internal server error"}"#.to_string()),
-            ))
+            Err(Json(ApiError {
+                error: InternalApiError {
+                    code: 500,
+                    reason: "Internal Server Error".to_string(),
+                    description: "The server encountered an internal error while processing this request.".to_string(),
+                },
+            }))
         }
     }
 }

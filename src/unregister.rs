@@ -1,3 +1,6 @@
+use rocket::http::Status;
+use rocket::serde::{json::Json, Deserialize};
+use rocket::State;
 use serde::Serialize;
 use std::process::Command;
 
@@ -12,6 +15,25 @@ pub struct Unregister {
 pub enum Error {
     NoDevice,
     Generic(String),
+}
+
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct Input {
+    public_key: String,
+}
+
+#[post("/unregister", data = "<input>")]
+pub fn api(input: Json<Input>, ops: &State<Ops>) -> Status {
+    let res = run(&ops, input.public_key.as_str());
+
+    match res {
+        Ok(_unreg) => Status::NoContent,
+        Err(err) => {
+            tracing::error!("Error during unregistration: {:?}", err);
+            Status::InternalServerError
+        }
+    }
 }
 
 pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {

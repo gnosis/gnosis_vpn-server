@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment)
                 .manage(ops)
-                .mount("/api/v1/clients", routes![register::api])
+                .mount("/api/v1/clients", routes![register::api, unregister::api])
                 .launch()
                 .await?;
         }
