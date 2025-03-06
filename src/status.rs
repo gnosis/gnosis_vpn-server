@@ -31,6 +31,11 @@ pub struct Status {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ApiStatus {
+    free: u32,
+}
+
+#[derive(Debug, Serialize)]
 pub struct IpSlots {
     total: u32,
     free: u32,
@@ -54,11 +59,29 @@ pub enum Error {
 }
 
 #[get("/status/<public_key>")]
-pub fn api(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSingle>, Json<ApiError>> {
+pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSingle>, Json<ApiError>> {
     let res = run_single(&ops, &public_key);
 
     match res {
-        Ok(status) => Ok(Json(status)),
+        Ok(status) => match status.state {
+            ConnectionState::NotRegistered => Err(Json(ApiError::new(404, "Not Found", "Client not registered"))),
+            _ => Ok(Json(status)),
+        },
+        Err(err) => {
+            tracing::error!("Error during API status: {:?}", err);
+            Err(Json(ApiError::internal_server_error()))
+        }
+    }
+}
+
+#[get("/status")]
+pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
+    let res = run(&ops);
+
+    match res {
+        Ok(status) => Ok(Json(ApiStatus {
+            free: status.slots.free,
+        })),
         Err(err) => {
             tracing::error!("Error during API status: {:?}", err);
             Err(Json(ApiError::internal_server_error()))
