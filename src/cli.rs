@@ -24,9 +24,11 @@ pub enum Command {
     #[command()]
     Serve {},
 
-    /// Access current wireguard status
+    /// Access current wireguard status of all clients or a single client
     #[command()]
     Status {
+        /// determine status only for this client
+        public_key: Option<String>,
         /// format output as json
         #[arg(long)]
         json: bool,

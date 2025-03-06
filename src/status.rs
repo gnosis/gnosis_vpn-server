@@ -1,8 +1,27 @@
+use rocket::serde::json::Json;
+use rocket::State;
 use serde::Serialize;
+use std::net::Ipv4Addr;
 
+use crate::api_error::ApiError;
 use crate::dump;
 use crate::dump::Peer;
 use crate::ops::Ops;
+
+#[derive(Debug, Serialize)]
+pub struct StatusSingle {
+    public_key: String,
+    ip: Option<Ipv4Addr>,
+    state: ConnectionState,
+}
+
+#[derive(Debug, Serialize)]
+pub enum ConnectionState {
+    NotRegistered,
+    Connected,
+    Expired,
+    NeverConnected,
+}
 
 #[derive(Debug, Serialize)]
 pub struct Status {
@@ -15,14 +34,14 @@ pub struct Status {
 pub struct IpSlots {
     total: u32,
     free: u32,
-    healthy: u32,
+    connected: u32,
     expired: u32,
     never_connected: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct PublicKeys {
-    healthy: Vec<String>,
+    connected: Vec<String>,
     expired: Vec<String>,
     never_connected: Vec<String>,
 }
@@ -32,6 +51,61 @@ pub enum Error {
     NoDevice,
     Dump(dump::Error),
     SystemTime(String),
+}
+
+#[get("/status/<public_key>")]
+pub fn api(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSingle>, Json<ApiError>> {
+    let res = run_single(&ops, &public_key);
+
+    match res {
+        Ok(status) => Ok(Json(status)),
+        Err(err) => {
+            tracing::error!("Error during API status: {:?}", err);
+            Err(Json(ApiError::internal_server_error()))
+        }
+    }
+}
+
+pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
+    let device = match ops.device() {
+        Some(device) => device,
+        None => return Err(Error::NoDevice),
+    };
+    let dump = dump::run(device).map_err(Error::Dump)?;
+    let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
+    match res_peer {
+        Some(peer) => {
+            if peer.has_handshaked() {
+                if peer
+                    .timed_out(&ops.client_handshake_timeout)
+                    .map_err(|err| Error::SystemTime(err.to_string()))?
+                {
+                    Ok(StatusSingle {
+                        public_key: peer.public_key.clone(),
+                        ip: Some(peer.ip),
+                        state: ConnectionState::Expired,
+                    })
+                } else {
+                    Ok(StatusSingle {
+                        public_key: peer.public_key.clone(),
+                        ip: Some(peer.ip),
+                        state: ConnectionState::Connected,
+                    })
+                }
+            } else {
+                Ok(StatusSingle {
+                    public_key: peer.public_key.clone(),
+                    ip: Some(peer.ip),
+                    state: ConnectionState::NeverConnected,
+                })
+            }
+        }
+        None => Ok(StatusSingle {
+            public_key: public_key.to_string(),
+            ip: None,
+            state: ConnectionState::NotRegistered,
+        }),
+    }
 }
 
 pub fn run(ops: &Ops) -> Result<Status, Error> {
@@ -61,7 +135,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
         }
     }
 
-    let (healthy_good_public_keys, expired_good_public_keys) = good_handshaked_public_keys
+    let (connected_good_public_keys, expired_good_public_keys) = good_handshaked_public_keys
         .iter()
         .partition::<Vec<_>, _>(|(_, res_timed_out)| {
             if let Ok(timed_out) = res_timed_out {
@@ -74,13 +148,13 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
     let slots = IpSlots {
         total,
         free: total - inside.len() as u32,
-        healthy: healthy_good_public_keys.len() as u32,
+        connected: connected_good_public_keys.len() as u32,
         expired: expired_good_public_keys.len() as u32,
         never_connected: never_connected_peers.len() as u32,
     };
 
     let public_keys = PublicKeys {
-        healthy: healthy_good_public_keys
+        connected: connected_good_public_keys
             .iter()
             .map(|(public_key, _)| public_key.clone())
             .collect(),

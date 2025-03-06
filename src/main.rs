@@ -11,6 +11,7 @@ use std::process;
 
 use crate::config::Config;
 
+mod api_error;
 mod cli;
 mod config;
 mod dump;
@@ -52,14 +53,34 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let _rocket = rocket::custom(figment)
                 .manage(ops)
-                .mount("/api/v1/clients", routes![register::api, unregister::api])
+                .mount("/api/v1/clients", routes![register::api, unregister::api, status::api])
                 .launch()
                 .await?;
         }
 
-        Command::Status { json } => {
-            let status = status::run(&ops);
-            match status {
+        Command::Status { json, public_key } if public_key.is_some() => {
+            let res = status::run_single(&ops, public_key.unwrap_or("".to_string()).as_str());
+            match res {
+                Ok(status) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&status)?);
+                    } else {
+                        println!("{:?}", status);
+                    }
+                }
+                Err(err) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
+                    }
+                    process::exit(1);
+                }
+            }
+        }
+        Command::Status { json, public_key: _ } => {
+            let res = status::run(&ops);
+            match res {
                 Ok(status) => {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&status)?);

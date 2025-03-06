@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::process::Command;
 
+use crate::api_error::ApiError;
 use crate::dump;
 use crate::ops::Ops;
 
@@ -30,27 +31,6 @@ pub struct Input {
     public_key: String,
 }
 
-/*
- * keep consistent with default:
-   {
-     "error": {
-        "code": 500,
-        "reason": "Internal Server Error",
-        "description": "The server encountered an internal error while processing this request."
-    }
-*/
-#[derive(Serialize)]
-struct InternalApiError {
-    code: u16,
-    reason: String,
-    description: String,
-}
-
-#[derive(Serialize)]
-pub struct ApiError {
-    error: InternalApiError,
-}
-
 #[post("/register", data = "<input>")]
 pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), Json<ApiError>> {
     let mut rand = rand::rng();
@@ -59,22 +39,10 @@ pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Registe
     match res {
         Ok(reg) if reg.newly_registered == true => Ok((Status::Created, Json(reg))),
         Ok(reg) => Ok((Status::Ok, Json(reg))),
-        Err(Error::NoFreeIp) => Err(Json(ApiError {
-            error: InternalApiError {
-                code: 404,
-                reason: "Not Found".to_string(),
-                description: "No free IP available".to_string(),
-            },
-        })),
+        Err(Error::NoFreeIp) => Err(Json(ApiError::new(404, "Not Found", "No free IP available"))),
         Err(err) => {
-            tracing::error!("Error during registration: {:?}", err);
-            Err(Json(ApiError {
-                error: InternalApiError {
-                    code: 500,
-                    reason: "Internal Server Error".to_string(),
-                    description: "The server encountered an internal error while processing this request.".to_string(),
-                },
-            }))
+            tracing::error!("Error during API register: {:?}", err);
+            Err(Json(ApiError::internal_server_error()))
         }
     }
 }

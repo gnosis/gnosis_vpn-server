@@ -4,6 +4,7 @@ use rocket::State;
 use serde::Serialize;
 use std::process::Command;
 
+use crate::api_error::ApiError;
 use crate::ops::Ops;
 
 #[derive(Debug, Serialize)]
@@ -24,14 +25,14 @@ pub struct Input {
 }
 
 #[post("/unregister", data = "<input>")]
-pub fn api(input: Json<Input>, ops: &State<Ops>) -> Status {
+pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<Status, Json<ApiError>> {
     let res = run(&ops, input.public_key.as_str());
 
     match res {
-        Ok(_unreg) => Status::NoContent,
+        Ok(_unreg) => Ok(Status::NoContent),
         Err(err) => {
-            tracing::error!("Error during unregistration: {:?}", err);
-            Status::InternalServerError
+            tracing::error!("Error during API unregister: {:?}", err);
+            Err(Json(ApiError::internal_server_error()))
         }
     }
 }
