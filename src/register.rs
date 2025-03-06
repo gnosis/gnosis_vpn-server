@@ -1,7 +1,7 @@
 use rocket::http::{ContentType, Status};
-use rocket::serde::{json::Json, Deserialize};
+use rocket::serde::json::Json;
 use rocket::State;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
 use std::process::Command;
@@ -31,30 +31,23 @@ pub struct Input {
 }
 
 #[post("/register", data = "<input>")]
-pub fn api(input: Json<Input>, ops: &State<Ops>) -> (Status, (ContentType, String)) {
+pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), (Status, (ContentType, String))> {
     let mut rand = rand::rng();
     let res = run(&ops, &mut rand, input.public_key.as_str());
-    let res_with_json = res.map(|reg| (reg.clone(), serde_json::to_string(&reg)));
-    match res_with_json {
-        Ok((reg, Ok(json))) if reg.newly_registered == true => (Status::Created, (ContentType::JSON, json)),
-        Ok((_reg, Ok(json))) => (Status::Ok, (ContentType::JSON, json)),
-        Ok((_reg, Err(err))) => {
-            tracing::error!("Error serializing register: {:?}", err);
-            (
-                Status::InternalServerError,
-                (ContentType::JSON, format!(r#"{{"error": "{}"}}"#, err)),
-            )
-        }
-        Err(Error::NoFreeIp) => (
+
+    match res {
+        Ok(reg) if reg.newly_registered == true => Ok((Status::Created, Json(reg))),
+        Ok(reg) => Ok((Status::Ok, Json(reg))),
+        Err(Error::NoFreeIp) => Err((
             Status::NotFound,
             (ContentType::JSON, r#"{"error": "No free IP available"}"#.to_string()),
-        ),
+        )),
         Err(err) => {
             tracing::error!("Error during registration: {:?}", err);
-            (
+            Err((
                 Status::InternalServerError,
-                (ContentType::JSON, r#"{{"error": "Internal server error"}}"#.to_string()),
-            )
+                (ContentType::JSON, r#"{"error": "Internal server error"}"#.to_string()),
+            ))
         }
     }
 }
