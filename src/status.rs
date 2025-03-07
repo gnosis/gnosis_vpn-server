@@ -31,13 +31,14 @@ pub struct Status {
 
 #[derive(Debug, Serialize)]
 pub struct ApiStatus {
-    free: u32,
+    available: u32,
+    connected: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct IpSlots {
     total: u32,
-    free: u32,
+    available: u32,
     connected: u32,
     expired: u32,
     never_connected: u32,
@@ -79,7 +80,8 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
 
     match res {
         Ok(status) => Ok(Json(ApiStatus {
-            free: status.slots.free,
+            available: status.slots.available,
+            connected: status.slots.connected,
         })),
         Err(err) => {
             tracing::error!("Error during API status: {:?}", err);
@@ -169,7 +171,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
     let total = ops.client_address_range.count();
     let slots = IpSlots {
         total,
-        free: total - inside.len() as u32,
+        available: total - inside.len() as u32,
         connected: connected_good_public_keys.len() as u32,
         expired: expired_good_public_keys.len() as u32,
         never_connected: never_connected_peers.len() as u32,
