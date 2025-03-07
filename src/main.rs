@@ -63,27 +63,10 @@ async fn main() -> Result<()> {
                 .mount("/api/v1", routes![status::api])
                 .launch();
 
-            let mut cron = time::interval(ops.client_cleanup_interval);
             if periodically_run_cleanup {
-                // first tick completes immediately
-                cron.tick().await;
-                let mut once_not_connected: Vec<String> = Vec::new();
-                loop {
-                    // waits ops.client_cleanup_interval
-                    cron.tick().await;
-                    match remove::cron(&ops, &once_not_connected) {
-                        Ok(newly_not_connected) => {
-                            once_not_connected = newly_not_connected;
-                        }
-                        Err(err) => {
-                            tracing::error!("Error during cleanup client reoccuring task: {:?}", err);
-                            once_not_connected = Vec::new();
-                        }
-                    }
-                }
-            } else {
-                rocket.await?;
+                tokio::spawn(async move { run_cron(&ops).await });
             }
+            rocket.await?;
         }
 
         Command::Status { json, public_key } if public_key.is_some() => {
@@ -216,4 +199,28 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn run_cron(ops: &Ops) {
+    let mut cron = time::interval(ops.client_cleanup_interval);
+    // first tick completes immediately
+    cron.tick().await;
+    let mut once_not_connected: Vec<String> = Vec::new();
+    loop {
+        // waits ops.client_cleanup_interval
+        cron.tick().await;
+        tracing::info!(
+            "Running clients cleanup job with {} potential targets from last run",
+            once_not_connected.len()
+        );
+        match remove::cron(&ops, &once_not_connected) {
+            Ok(newly_not_connected) => {
+                once_not_connected = newly_not_connected;
+            }
+            Err(err) => {
+                tracing::error!("Error during clients cleanup: {:?}", err);
+                once_not_connected = Vec::new();
+            }
+        }
+    }
 }
