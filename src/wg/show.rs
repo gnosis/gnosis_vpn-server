@@ -36,6 +36,10 @@ pub fn dump(device: &str) -> Result<Dump, Error> {
         return Err(Error::Generic(format!("wg show dump failed: {:?}", output)));
     }
 
+    if !output.stderr.is_empty() {
+        tracing::warn!("wg show dump stderr: {}", String::from_utf8_lossy(&output.stderr));
+    }
+
     let content = match String::from_utf8(output.stdout) {
         Ok(content) => content,
         Err(err) => {

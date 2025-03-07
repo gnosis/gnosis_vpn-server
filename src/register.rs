@@ -88,6 +88,10 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
         }
     };
 
+    if !output.stderr.is_empty() {
+        tracing::warn!("wg set peer stderr: {}", String::from_utf8_lossy(&output.stderr));
+    }
+
     if output.status.success() {
         Ok(Register {
             public_key: public_key.to_string(),

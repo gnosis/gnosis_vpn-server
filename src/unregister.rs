@@ -61,6 +61,10 @@ pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
         }
     };
 
+    if !output.stderr.is_empty() {
+        tracing::warn!("wg set peer stderr: {}", String::from_utf8_lossy(&output.stderr));
+    }
+
     if output.status.success() {
         Ok(Unregister {
             public_key: public_key.to_string(),
