@@ -1,4 +1,5 @@
 use serde::Serialize;
+use std::collections::HashSet;
 use std::time::Duration;
 
 use crate::dump;
@@ -25,12 +26,39 @@ pub enum Error {
     SystemTime(String),
 }
 
-pub fn expired(ops: &Ops, client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
+pub fn cron(ops: &Ops, once_not_connected: &Vec<String>) -> Result<Vec<String>, Error> {
+    let _ = expired(ops, &None)?;
+
+    // determine never connected
     let device = match ops.device() {
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let client_handshake_timeout = client_handshake_timeout_s
+    let dump = dump::run(device).map_err(Error::Dump)?;
+    let public_keys = dump
+        .peers
+        .iter()
+        .filter(|peer| !peer.has_handshaked())
+        .map(|peer| &peer.public_key)
+        .collect::<Vec<&String>>();
+
+    let newly_found: HashSet<&String> = public_keys.into_iter().collect();
+    let existing: HashSet<&String> = once_not_connected.into_iter().collect();
+
+    let removable = existing.intersection(&newly_found).collect::<HashSet<_>>();
+    for key in removable {
+        let _ = unregister::run(ops, key).map_err(Error::Unregister)?;
+    }
+    let remaining = newly_found.difference(removable);
+    Ok(remaining)
+}
+
+pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
+    let device = match ops.device() {
+        Some(device) => device,
+        None => return Err(Error::NoDevice),
+    };
+    let client_handshake_timeout = overwrite_client_handshake_timeout_s
         .map(Duration::from_secs)
         .unwrap_or(ops.client_handshake_timeout);
     let dump = dump::run(device).map_err(Error::Dump)?;

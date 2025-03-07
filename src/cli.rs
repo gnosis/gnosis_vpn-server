@@ -22,7 +22,10 @@ pub struct Cli {
 pub enum Command {
     /// Start http server listening for client requests
     #[command()]
-    Serve {},
+    Serve {
+        #[arg(long)]
+        periodically_run_cleanup: bool,
+    },
 
     /// Access current wireguard status of all clients or a single client
     #[command()]

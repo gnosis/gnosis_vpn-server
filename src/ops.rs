@@ -13,6 +13,7 @@ pub struct Ops {
     pub rocket_port: u16,
     pub wg_device_config: PathBuf,
     pub client_handshake_timeout: Duration,
+    pub client_cleanup_interval: Duration,
 }
 
 impl Ops {
@@ -26,6 +27,7 @@ impl From<Config> for Ops {
         let def_rocket_address = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
         let def_rocket_port = 8000;
         let def_client_handshake_timeout = Duration::from_secs(5 * 60);
+        let def_client_cleanup_interval = Duration::from_secs(3 * 60);
 
         Self {
             client_address_range: config.allowed_client_ips.clone(),
@@ -36,6 +38,10 @@ impl From<Config> for Ops {
                 .client_handshake_timeout_s
                 .map(Duration::from_secs)
                 .unwrap_or(def_client_handshake_timeout),
+            client_cleanup_interval: config
+                .client_cleanup_interval_s
+                .map(Duration::from_secs)
+                .unwrap_or(def_client_cleanup_interval),
         }
     }
 }

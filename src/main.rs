@@ -8,6 +8,8 @@ use ops::Ops;
 use rocket::figment::Figment;
 use std::fs;
 use std::process;
+use std::time::Duration;
+use tokio::time;
 
 use crate::config::Config;
 
@@ -32,7 +34,9 @@ async fn main() -> Result<()> {
     let ops = Ops::from(config);
 
     match args.command {
-        Command::Serve {} => {
+        Command::Serve {
+            periodically_run_cleanup,
+        } => {
             // install global collector configured based on RUST_LOG env var.
             tracing_subscriber::fmt::init();
             tracing::info!(
@@ -51,15 +55,26 @@ async fn main() -> Result<()> {
                 port = ops.rocket_port
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
-            let _rocket = rocket::custom(figment)
+            let mut cron = time::interval(ops.client_cleanup_interval);
+            let rocket = rocket::custom(figment)
                 .manage(ops)
                 .mount(
                     "/api/v1/clients",
                     routes![register::api, unregister::api, status::api_single],
                 )
                 .mount("/api/v1", routes![status::api])
-                .launch()
-                .await?;
+                .launch();
+
+            if periodically_run_cleanup {
+                // first tick completes immediately
+                cron.tick().await;
+                loop {
+                    // waits ops.client_cleanup_interval
+                    cron.tick().await;
+                }
+            } else {
+                rocket.await?;
+            }
         }
 
         Command::Status { json, public_key } if public_key.is_some() => {
