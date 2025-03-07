@@ -213,7 +213,7 @@ async fn run_cron(ops: &Ops) {
             "Running clients cleanup job with {} potential targets from last run",
             once_not_connected.len()
         );
-        match remove::cron(&ops, &once_not_connected) {
+        match remove::cron(ops, &once_not_connected) {
             Ok(newly_not_connected) => {
                 once_not_connected = newly_not_connected;
             }
