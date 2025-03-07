@@ -21,6 +21,7 @@ pub struct Register {
 pub enum Error {
     NoDevice,
     NoFreeIp,
+    IpAlreadyTaken,
     Generic(String),
     WgShow(show::Error),
 }

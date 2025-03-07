@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 /// Gnosis VPN server - orchestrate WireGuard server for GnosisVPN connections
@@ -26,6 +27,9 @@ pub enum Command {
         /// periodically run cleanup job, interval is taken from configuration file
         #[arg(long)]
         periodically_run_cleanup: bool,
+        /// run wg-quick commands to update wg device and persist configuration
+        #[arg(long)]
+        sync_wg_device: bool,
     },
 
     /// Access current wireguard status of all clients or a single client
@@ -43,6 +47,8 @@ pub enum Command {
     Register {
         /// client public key
         public_key: String,
+        /// force specific IP address instead of using random available one
+        force_ip: Option<Ipv4Addr>,
         /// format output as json
         #[arg(long)]
         json: bool,
