@@ -23,6 +23,7 @@ pub enum Command {
     /// Start http server listening for client requests
     #[command()]
     Serve {
+        /// periodically run cleanup job, interval is taken from configuration file
         #[arg(long)]
         periodically_run_cleanup: bool,
     },

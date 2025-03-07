@@ -6,7 +6,7 @@ use std::time::Duration;
 use crate::config::Config;
 use crate::ip_range::IpRange;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ops {
     pub client_address_range: IpRange,
     pub rocket_address: IpAddr,

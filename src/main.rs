@@ -8,7 +8,6 @@ use ops::Ops;
 use rocket::figment::Figment;
 use std::fs;
 use std::process;
-use std::time::Duration;
 use tokio::time;
 
 use crate::config::Config;
@@ -55,9 +54,8 @@ async fn main() -> Result<()> {
                 port = ops.rocket_port
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
-            let mut cron = time::interval(ops.client_cleanup_interval);
             let rocket = rocket::custom(figment)
-                .manage(ops)
+                .manage(ops.clone())
                 .mount(
                     "/api/v1/clients",
                     routes![register::api, unregister::api, status::api_single],
@@ -65,12 +63,23 @@ async fn main() -> Result<()> {
                 .mount("/api/v1", routes![status::api])
                 .launch();
 
+            let mut cron = time::interval(ops.client_cleanup_interval);
             if periodically_run_cleanup {
                 // first tick completes immediately
                 cron.tick().await;
+                let mut once_not_connected: Vec<String> = Vec::new();
                 loop {
                     // waits ops.client_cleanup_interval
                     cron.tick().await;
+                    match remove::cron(&ops, &once_not_connected) {
+                        Ok(newly_not_connected) => {
+                            once_not_connected = newly_not_connected;
+                        }
+                        Err(err) => {
+                            tracing::error!("Error during cleanup client reoccuring task: {:?}", err);
+                            once_not_connected = Vec::new();
+                        }
+                    }
                 }
             } else {
                 rocket.await?;

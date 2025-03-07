@@ -26,7 +26,7 @@ pub enum Error {
     SystemTime(String),
 }
 
-pub fn cron(ops: &Ops, once_not_connected: &Vec<String>) -> Result<Vec<String>, Error> {
+pub fn cron(ops: &Ops, once_not_connected: &[String]) -> Result<Vec<String>, Error> {
     let _ = expired(ops, &None)?;
 
     // determine never connected
@@ -43,13 +43,14 @@ pub fn cron(ops: &Ops, once_not_connected: &Vec<String>) -> Result<Vec<String>, 
         .collect::<Vec<&String>>();
 
     let newly_found: HashSet<&String> = public_keys.into_iter().collect();
-    let existing: HashSet<&String> = once_not_connected.into_iter().collect();
+    let existing: HashSet<&String> = once_not_connected.iter().collect();
 
-    let removable = existing.intersection(&newly_found).collect::<HashSet<_>>();
-    for key in removable {
+    let removable: HashSet<&String> = existing.intersection(&newly_found).copied().collect();
+    for key in &removable {
         let _ = unregister::run(ops, key).map_err(Error::Unregister)?;
     }
-    let remaining = newly_found.difference(removable);
+
+    let remaining: Vec<String> = newly_found.difference(&removable).map(|&key| key.clone()).collect();
     Ok(remaining)
 }
 
