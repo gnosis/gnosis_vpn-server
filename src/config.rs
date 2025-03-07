@@ -12,6 +12,8 @@ pub struct Config {
     pub endpoint: Option<SocketAddr>,
     // wg device name and configuration file to store server state
     pub wireguard_config_path: PathBuf,
-    // client last hand_shake removal timeout
+    // determines when a client is considered disconnected
     pub client_handshake_timeout_s: Option<u64>,
+    // interval at which client removal job is run
+    pub client_cleanup_interval_s: Option<u64>,
 }

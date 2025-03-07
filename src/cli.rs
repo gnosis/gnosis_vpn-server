@@ -22,11 +22,17 @@ pub struct Cli {
 pub enum Command {
     /// Start http server listening for client requests
     #[command()]
-    Serve {},
+    Serve {
+        /// periodically run cleanup job, interval is taken from configuration file
+        #[arg(long)]
+        periodically_run_cleanup: bool,
+    },
 
-    /// Access current wireguard status
+    /// Access current wireguard status of all clients or a single client
     #[command()]
     Status {
+        /// determine status only for this client
+        public_key: Option<String>,
         /// format output as json
         #[arg(long)]
         json: bool,

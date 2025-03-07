@@ -5,5 +5,7 @@ wireguard_config_path = "./wggnosisvpn.conf"
 
 # [optional] server endpoint
 # endpoint = "127.0.0.1:8000"
-# [optional] last handshake removal timeout
-# client_handshake_timeout_s = 320
+# [optional] determines when a client is considered disconnected
+# client_handshake_timeout_s = 300
+# [optional] interval at which client removal job is run if enabled
+# client_cleanup_interval_s = 180

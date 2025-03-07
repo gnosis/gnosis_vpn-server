@@ -8,9 +8,11 @@ use ops::Ops;
 use rocket::figment::Figment;
 use std::fs;
 use std::process;
+use tokio::time;
 
 use crate::config::Config;
 
+mod api_error;
 mod cli;
 mod config;
 mod dump;
@@ -20,11 +22,6 @@ mod register;
 mod remove;
 mod status;
 mod unregister;
-
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
-}
 
 #[rocket::main]
 async fn main() -> Result<()> {
@@ -36,8 +33,12 @@ async fn main() -> Result<()> {
     let ops = Ops::from(config);
 
     match args.command {
-        Command::Serve {} => {
-            println!(
+        Command::Serve {
+            periodically_run_cleanup,
+        } => {
+            // install global collector configured based on RUST_LOG env var.
+            tracing_subscriber::fmt::init();
+            tracing::info!(
                 "serving {name} v{version} on {ip}:{port}",
                 name = env!("CARGO_PKG_NAME"),
                 version = env!("CARGO_PKG_VERSION"),
@@ -53,12 +54,44 @@ async fn main() -> Result<()> {
                 port = ops.rocket_port
             );
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
-            let _rocket = rocket::custom(figment).mount("/", routes![index]).launch().await?;
+            let rocket = rocket::custom(figment)
+                .manage(ops.clone())
+                .mount(
+                    "/api/v1/clients",
+                    routes![register::api, unregister::api, status::api_single],
+                )
+                .mount("/api/v1", routes![status::api])
+                .launch();
+
+            if periodically_run_cleanup {
+                tokio::spawn(async move { run_cron(&ops).await });
+            }
+            rocket.await?;
         }
 
-        Command::Status { json } => {
-            let status = status::run(&ops);
-            match status {
+        Command::Status { json, public_key } if public_key.is_some() => {
+            let res = status::run_single(&ops, public_key.unwrap_or("".to_string()).as_str());
+            match res {
+                Ok(status) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&status)?);
+                    } else {
+                        println!("{:?}", status);
+                    }
+                }
+                Err(err) => {
+                    if json {
+                        println!("{}", serde_json::to_string_pretty(&err)?);
+                    } else {
+                        println!("{:?}", err);
+                    }
+                    process::exit(1);
+                }
+            }
+        }
+        Command::Status { json, public_key: _ } => {
+            let res = status::run(&ops);
+            match res {
                 Ok(status) => {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&status)?);
@@ -78,8 +111,8 @@ async fn main() -> Result<()> {
         }
 
         Command::Register { public_key, json } => {
-            let mut rng = rand::rng();
-            let register = register::run(&ops, &mut rng, &public_key);
+            let mut rand = rand::rng();
+            let register = register::run(&ops, &mut rand, &public_key);
             match register {
                 Ok(register) => {
                     if json {
@@ -166,4 +199,28 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn run_cron(ops: &Ops) {
+    let mut cron = time::interval(ops.client_cleanup_interval);
+    // first tick completes immediately
+    cron.tick().await;
+    let mut once_not_connected: Vec<String> = Vec::new();
+    loop {
+        // waits ops.client_cleanup_interval
+        cron.tick().await;
+        tracing::info!(
+            "Running clients cleanup job with {} potential targets from last run",
+            once_not_connected.len()
+        );
+        match remove::cron(ops, &once_not_connected) {
+            Ok(newly_not_connected) => {
+                once_not_connected = newly_not_connected;
+            }
+            Err(err) => {
+                tracing::error!("Error during clients cleanup: {:?}", err);
+                once_not_connected = Vec::new();
+            }
+        }
+    }
 }
