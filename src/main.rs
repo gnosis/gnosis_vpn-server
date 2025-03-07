@@ -15,13 +15,13 @@ use crate::config::Config;
 mod api_error;
 mod cli;
 mod config;
-mod dump;
 mod ip_range;
 mod ops;
 mod register;
 mod remove;
 mod status;
 mod unregister;
+mod wg;
 
 #[rocket::main]
 async fn main() -> Result<()> {

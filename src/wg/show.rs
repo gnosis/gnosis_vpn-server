@@ -2,9 +2,7 @@ use serde::Serialize;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::process::Command;
 
-pub use peer::Peer;
-
-mod peer;
+use crate::wg::peer::Peer;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -24,7 +22,7 @@ pub enum Error {
     WrongNumberOfFieldsInPeerLine,
 }
 
-pub fn run(device: &str) -> Result<Dump, Error> {
+pub fn dump(device: &str) -> Result<Dump, Error> {
     let res_output = Command::new("wg").arg("show").arg(device).arg("dump").output();
 
     let output = match res_output {

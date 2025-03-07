@@ -4,9 +4,8 @@ use serde::Serialize;
 use std::net::Ipv4Addr;
 
 use crate::api_error::ApiError;
-use crate::dump;
-use crate::dump::Peer;
 use crate::ops::Ops;
+use crate::wg::{peer::Peer, show};
 
 #[derive(Debug, Serialize)]
 pub struct StatusSingle {
@@ -54,7 +53,7 @@ pub struct PublicKeys {
 #[derive(Debug, Serialize)]
 pub enum Error {
     NoDevice,
-    Dump(dump::Error),
+    WgShow(show::Error),
     SystemTime(String),
 }
 
@@ -94,7 +93,7 @@ pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let dump = dump::run(device).map_err(Error::Dump)?;
+    let dump = show::dump(device).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     match res_peer {
         Some(peer) => {
@@ -136,7 +135,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let dump = dump::run(device).map_err(Error::Dump)?;
+    let dump = show::dump(device).map_err(Error::WgShow)?;
 
     let (inside, outside): (Vec<&Peer>, Vec<&Peer>) = dump
         .peers

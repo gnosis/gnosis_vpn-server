@@ -7,8 +7,8 @@ use std::net::Ipv4Addr;
 use std::process::Command;
 
 use crate::api_error::ApiError;
-use crate::dump;
 use crate::ops::Ops;
+use crate::wg::show;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Register {
@@ -22,7 +22,7 @@ pub enum Error {
     NoDevice,
     NoFreeIp,
     Generic(String),
-    Dump(dump::Error),
+    WgShow(show::Error),
 }
 
 #[derive(Deserialize)]
@@ -52,7 +52,7 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
         Some(device) => device,
         None => return Err(Error::NoDevice),
     };
-    let dump = dump::run(device).map_err(Error::Dump)?;
+    let dump = show::dump(device).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     if let Some(peer) = res_peer {
         return Ok(Register {
