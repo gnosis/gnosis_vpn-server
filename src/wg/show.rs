@@ -22,13 +22,13 @@ pub enum Error {
     WrongNumberOfFieldsInPeerLine,
 }
 
-pub fn dump(device: &str) -> Result<Dump, Error> {
-    let res_output = Command::new("wg").arg("show").arg(device).arg("dump").output();
+pub fn dump(interface: &str) -> Result<Dump, Error> {
+    let res_output = Command::new("wg").arg("show").arg(interface).arg("dump").output();
 
     let output = match res_output {
         Ok(output) => output,
         Err(err) => {
-            return Err(Error::Generic(format!("wg show {} dump failed: {}", device, err)));
+            return Err(Error::Generic(format!("wg show {} dump failed: {}", interface, err)));
         }
     };
 

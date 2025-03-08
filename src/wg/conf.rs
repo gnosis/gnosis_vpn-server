@@ -1,5 +1,6 @@
 use serde::Serialize;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::fs::File;
+use std::io::Write;
 use std::process::Command;
 
 use crate::ops::Ops;
@@ -17,51 +18,70 @@ pub struct Dump {
 
 #[derive(Debug, Serialize)]
 pub enum Error {
-    NoDevice,
+    NoInterface,
     Generic(String),
-    NoOutputLines,
-    WrongNumberOfFieldsInServerLine,
-    WrongNumberOfFieldsInPeerLine,
+    IOError(String),
 }
 
 pub fn set_device(ops: &Ops) -> Result<(), Error> {
-    let res_output = Command::new("wg-quick").arg("up").arg(ops.wg_device_config).output();
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
+    };
+
+    let res_output = Command::new("wg")
+        .arg("setconf")
+        .arg(interface)
+        .arg(&ops.wg_interface_config)
+        .output();
 
     let output = match res_output {
         Ok(output) => output,
         Err(err) => {
-            return Err(Error::Generic(format!("wg-quick up for {} failed: {}", device, err)));
+            return Err(Error::Generic(format!(
+                "wg setconf {} {:?} failed: {}",
+                interface, &ops.wg_interface_config, err
+            )));
         }
     };
 
     if !output.status.success() {
-        return Err(Error::Generic(format!("wg-quick up failed: {:?}", output)));
+        return Err(Error::Generic(format!("wg setconf failed: {:?}", output)));
     }
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg-quick up stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!("wg setconf stderr: {}", String::from_utf8_lossy(&output.stderr));
     }
 
     Ok(())
 }
 
 pub fn save_file(ops: &Ops) -> Result<(), Error> {
-    let res_output = Command::new("wg-quick").arg("down").arg(ops.wg_device_config).output();
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
+    };
+
+    let res_output = Command::new("wg").arg("showconf").arg(interface).output();
 
     let output = match res_output {
         Ok(output) => output,
         Err(err) => {
-            return Err(Error::Generic(format!("wg-quick down for {} failed: {}", device, err)));
+            return Err(Error::Generic(format!("wg showconf {} failed: {:?}", interface, err)));
         }
     };
 
     if !output.status.success() {
-        return Err(Error::Generic(format!("wg-quick down failed: {:?}", output)));
+        return Err(Error::Generic(format!("wg showconf failed: {:?}", output)));
     }
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg-quick down stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!("wg showconf stderr: {}", String::from_utf8_lossy(&output.stderr));
     }
+
+    let mut f = File::create(&ops.wg_interface_config).map_err(|err| Error::IOError(err.to_string()))?;
+    f.write_all(&output.stdout)
+        .map_err(|err| Error::IOError(err.to_string()))?;
 
     Ok(())
 }

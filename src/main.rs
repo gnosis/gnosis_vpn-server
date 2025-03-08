@@ -11,6 +11,7 @@ use std::process;
 use tokio::time;
 
 use crate::config::Config;
+use crate::register::RunVariant;
 
 mod api_error;
 mod cli;
@@ -35,6 +36,7 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Serve {
             periodically_run_cleanup,
+            sync_wg_device,
         } => {
             // install global collector configured based on RUST_LOG env var.
             tracing_subscriber::fmt::init();
@@ -110,9 +112,18 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::Register { public_key, json } => {
-            let mut rand = rand::rng();
-            let register = register::run(&ops, &mut rand, &public_key);
+        Command::Register {
+            public_key,
+            json,
+            force_ip,
+        } => {
+            let variant = if let Some(force_ip) = force_ip {
+                RunVariant::UseIP(force_ip)
+            } else {
+                let rand = rand::rng();
+                RunVariant::GenerateIP(rand)
+            };
+            let register = register::run(&ops, variant, &public_key);
             match register {
                 Ok(register) => {
                     if json {

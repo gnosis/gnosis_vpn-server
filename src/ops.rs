@@ -11,14 +11,14 @@ pub struct Ops {
     pub client_address_range: IpRange,
     pub rocket_address: IpAddr,
     pub rocket_port: u16,
-    pub wg_device_config: PathBuf,
+    pub wg_interface_config: PathBuf,
     pub client_handshake_timeout: Duration,
     pub client_cleanup_interval: Duration,
 }
 
 impl Ops {
-    pub fn device(&self) -> Option<&str> {
-        self.wg_device_config.file_stem().and_then(OsStr::to_str)
+    pub fn interface(&self) -> Option<&str> {
+        self.wg_interface_config.file_stem().and_then(OsStr::to_str)
     }
 }
 
@@ -33,7 +33,7 @@ impl From<Config> for Ops {
             client_address_range: config.allowed_client_ips.clone(),
             rocket_address: config.endpoint.map(|addr| addr.ip()).unwrap_or(def_rocket_address),
             rocket_port: config.endpoint.map(|addr| addr.port()).unwrap_or(def_rocket_port),
-            wg_device_config: config.wireguard_config_path.clone(),
+            wg_interface_config: config.wireguard_config_path.clone(),
             client_handshake_timeout: config
                 .client_handshake_timeout_s
                 .map(Duration::from_secs)

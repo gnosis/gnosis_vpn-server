@@ -32,10 +32,15 @@ pub struct Input {
     public_key: String,
 }
 
+pub enum RunVariant {
+    GenerateIP(rand::rngs::ThreadRng),
+    UseIP(Ipv4Addr),
+}
+
 #[post("/register", data = "<input>")]
 pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), Json<ApiError>> {
-    let mut rand = rand::rng();
-    let res = run(ops, &mut rand, input.public_key.as_str());
+    let rand = rand::rng();
+    let res = run(ops, RunVariant::GenerateIP(rand), input.public_key.as_str());
 
     match res {
         Ok(reg) if reg.newly_registered => Ok((Status::Created, Json(reg))),
@@ -48,12 +53,12 @@ pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Registe
     }
 }
 
-pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Result<Register, Error> {
-    let device = match ops.device() {
-        Some(device) => device,
+pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register, Error> {
+    let interface = match ops.interface() {
+        Some(interface) => interface,
         None => return Err(Error::NoDevice),
     };
-    let dump = show::dump(device).map_err(Error::WgShow)?;
+    let dump = show::dump(interface).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     if let Some(peer) = res_peer {
         return Ok(Register {
@@ -64,15 +69,25 @@ pub fn run(ops: &Ops, rng: &mut rand::rngs::ThreadRng, public_key: &str) -> Resu
     }
 
     let existing_ips: HashSet<Ipv4Addr> = HashSet::from_iter(dump.peers.iter().map(|peer| peer.ip));
-    let res_ip = ops.client_address_range.find_free_ip(&existing_ips, rng);
-    let ip = match res_ip {
-        Some(ip) => ip,
-        None => return Err(Error::NoFreeIp),
+    let ip = match variant {
+        RunVariant::GenerateIP(mut rng) => {
+            let res_ip = ops.client_address_range.find_free_ip(&existing_ips, &mut rng);
+            match res_ip {
+                Some(ip) => ip,
+                None => return Err(Error::NoFreeIp),
+            }
+        }
+        RunVariant::UseIP(ip) => {
+            if existing_ips.contains(&ip) {
+                return Err(Error::IpAlreadyTaken);
+            }
+            ip
+        }
     };
 
     let res_output = Command::new("wg")
         .arg("set")
-        .arg(device)
+        .arg(interface)
         .arg("peer")
         .arg(public_key)
         .arg("allowed-ips")
