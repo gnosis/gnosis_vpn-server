@@ -4,9 +4,8 @@ use serde::Serialize;
 use std::net::Ipv4Addr;
 
 use crate::api_error::ApiError;
-use crate::dump;
-use crate::dump::Peer;
 use crate::ops::Ops;
+use crate::wg::{peer::Peer, show};
 
 #[derive(Debug, Serialize)]
 pub struct StatusSingle {
@@ -32,13 +31,14 @@ pub struct Status {
 
 #[derive(Debug, Serialize)]
 pub struct ApiStatus {
-    free: u32,
+    available: u32,
+    connected: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct IpSlots {
     total: u32,
-    free: u32,
+    available: u32,
     connected: u32,
     expired: u32,
     never_connected: u32,
@@ -53,8 +53,8 @@ pub struct PublicKeys {
 
 #[derive(Debug, Serialize)]
 pub enum Error {
-    NoDevice,
-    Dump(dump::Error),
+    NoInterface,
+    WgShow(show::Error),
     SystemTime(String),
 }
 
@@ -80,7 +80,8 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
 
     match res {
         Ok(status) => Ok(Json(ApiStatus {
-            free: status.slots.free,
+            available: status.slots.available,
+            connected: status.slots.connected,
         })),
         Err(err) => {
             tracing::error!("Error during API status: {:?}", err);
@@ -90,11 +91,11 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
 }
 
 pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
-    let device = match ops.device() {
-        Some(device) => device,
-        None => return Err(Error::NoDevice),
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
     };
-    let dump = dump::run(device).map_err(Error::Dump)?;
+    let dump = show::dump(interface).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     match res_peer {
         Some(peer) => {
@@ -132,11 +133,11 @@ pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
 }
 
 pub fn run(ops: &Ops) -> Result<Status, Error> {
-    let device = match ops.device() {
-        Some(device) => device,
-        None => return Err(Error::NoDevice),
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
     };
-    let dump = dump::run(device).map_err(Error::Dump)?;
+    let dump = show::dump(interface).map_err(Error::WgShow)?;
 
     let (inside, outside): (Vec<&Peer>, Vec<&Peer>) = dump
         .peers
@@ -170,7 +171,7 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
     let total = ops.client_address_range.count();
     let slots = IpSlots {
         total,
-        free: total - inside.len() as u32,
+        available: total - inside.len() as u32,
         connected: connected_good_public_keys.len() as u32,
         expired: expired_good_public_keys.len() as u32,
         never_connected: never_connected_peers.len() as u32,

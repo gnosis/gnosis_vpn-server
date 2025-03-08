@@ -11,17 +11,19 @@ use std::process;
 use tokio::time;
 
 use crate::config::Config;
+use crate::register::RunVariant;
+use crate::wg::conf;
 
 mod api_error;
 mod cli;
 mod config;
-mod dump;
 mod ip_range;
 mod ops;
 mod register;
 mod remove;
 mod status;
 mod unregister;
+mod wg;
 
 #[rocket::main]
 async fn main() -> Result<()> {
@@ -35,6 +37,7 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Serve {
             periodically_run_cleanup,
+            sync_wg_interface,
         } => {
             // install global collector configured based on RUST_LOG env var.
             tracing_subscriber::fmt::init();
@@ -53,6 +56,17 @@ async fn main() -> Result<()> {
                 address = ops.rocket_address,
                 port = ops.rocket_port
             );
+
+            if sync_wg_interface {
+                match conf::set_interface(&ops) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        tracing::error!(?err, "Restore interface state failed");
+                        process::exit(1);
+                    }
+                }
+            }
+
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let rocket = rocket::custom(figment)
                 .manage(ops.clone())
@@ -64,9 +78,20 @@ async fn main() -> Result<()> {
                 .launch();
 
             if periodically_run_cleanup {
+                let ops = ops.clone();
                 tokio::spawn(async move { run_cron(&ops).await });
             }
             rocket.await?;
+
+            if sync_wg_interface {
+                match conf::save_file(&ops) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        tracing::error!(?err, "Persisting interface state to config failed");
+                        process::exit(1);
+                    }
+                }
+            }
         }
 
         Command::Status { json, public_key } if public_key.is_some() => {
@@ -89,6 +114,7 @@ async fn main() -> Result<()> {
                 }
             }
         }
+
         Command::Status { json, public_key: _ } => {
             let res = status::run(&ops);
             match res {
@@ -110,9 +136,24 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::Register { public_key, json } => {
-            let mut rand = rand::rng();
-            let register = register::run(&ops, &mut rand, &public_key);
+        Command::Register {
+            public_key,
+            json,
+            force_ip,
+            persist_config,
+        } => {
+            let variant = if let Some(force_ip) = force_ip {
+                RunVariant::UseIP(force_ip)
+            } else {
+                let rand = rand::rng();
+                RunVariant::GenerateIP(rand)
+            };
+            let register = register::run(&ops, variant, &public_key);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match register {
                 Ok(register) => {
                     if json {
@@ -132,8 +173,17 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::Unregister { public_key, json } => {
+        Command::Unregister {
+            public_key,
+            json,
+            persist_config,
+        } => {
             let unregister = unregister::run(&ops, &public_key);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match unregister {
                 Ok(_) => {
                     // there is no output for this command
@@ -155,8 +205,14 @@ async fn main() -> Result<()> {
         Command::RemoveExpired {
             client_handshake_timeout_s,
             json,
+            persist_config,
         } => {
             let remove_expired = remove::expired(&ops, &client_handshake_timeout_s);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match remove_expired {
                 Ok(remove_expired) => {
                     if json {
@@ -176,8 +232,13 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::RemoveNeverConnected { json } => {
+        Command::RemoveNeverConnected { json, persist_config } => {
             let remove_never_connected = remove::never_connected(&ops);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match remove_never_connected {
                 Ok(remove_never_connected) => {
                     if json {

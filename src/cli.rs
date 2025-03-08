@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use std::net::Ipv4Addr;
 use std::path::PathBuf;
 
 /// Gnosis VPN server - orchestrate WireGuard server for GnosisVPN connections
@@ -20,61 +21,79 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Start http server listening for client requests
+    /// Start http server listening for client requests.
+    /// Allows periodic wireguard interface management and configuration sync.
     #[command()]
     Serve {
-        /// periodically run cleanup job, interval is taken from configuration file
+        /// Periodically run cleanup job, interval is taken from configuration file
         #[arg(long)]
         periodically_run_cleanup: bool,
+        /// Restore wg interface state from configuration file and persist changes
+        #[arg(long)]
+        sync_wg_interface: bool,
     },
 
     /// Access current wireguard status of all clients or a single client
     #[command()]
     Status {
-        /// determine status only for this client
+        /// Determine status only for this client
         public_key: Option<String>,
-        /// format output as json
+        /// Format output as json
         #[arg(long)]
         json: bool,
     },
 
-    /// Register new client and return assigned IP
+    /// Register new client into wg interface and return assigned IP
     #[command()]
     Register {
-        /// client public key
+        /// Client public key
         public_key: String,
-        /// format output as json
+        /// Force specific IP address instead of using random available one
+        force_ip: Option<Ipv4Addr>,
+        /// Format output as json
         #[arg(long)]
         json: bool,
+        /// Persist changes to configuration file
+        #[arg(long)]
+        persist_config: bool,
     },
 
-    /// Unregister client
+    /// Unregister client from wg interface
     #[command()]
     Unregister {
-        /// client public key
+        /// Client public key
         public_key: String,
-        /// format output as json
+        /// Format output as json
         #[arg(long)]
         json: bool,
+        /// Persist changes to configuration file
+        #[arg(long)]
+        persist_config: bool,
     },
 
     /// Remove expired clients that have been connected before
     #[command()]
     RemoveExpired {
-        /// overwrite configured or default client handshake timeout
+        /// Overwrite expiration (last client handshake) timeout
         #[arg(long)]
         client_handshake_timeout_s: Option<u64>,
-        /// format output as json
+        /// Format output as json
         #[arg(long)]
         json: bool,
+        /// Persist changes to configuration file
+        #[arg(long)]
+        persist_config: bool,
     },
 
     /// Remove clients that registered but never connected
     #[command()]
     RemoveNeverConnected {
-        /// format output as json
+        /// Format output as json
         #[arg(long)]
         json: bool,
+        /// Persist changes to configuration file
+        #[arg(long)]
+        persist_config: bool,
     },
 }
 

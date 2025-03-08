@@ -10,7 +10,7 @@ pub struct Config {
     pub allowed_client_ips: IpRange,
     // web server endpoint
     pub endpoint: Option<SocketAddr>,
-    // wg device name and configuration file to store server state
+    // wg interface name and configuration file to store server state
     pub wireguard_config_path: PathBuf,
     // determines when a client is considered disconnected
     pub client_handshake_timeout_s: Option<u64>,
