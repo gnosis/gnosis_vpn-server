@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
                 match conf::set_interface(&ops) {
                     Ok(_) => (),
                     Err(err) => {
-                        tracing::error!("Error setting wg interface: {:?}", err);
+                        tracing::error!(?err, "Restore interface state failed");
                         process::exit(1);
                     }
                 }
@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
                 match conf::save_file(&ops) {
                     Ok(_) => (),
                     Err(err) => {
-                        tracing::error!("Error saving wg interface: {:?}", err);
+                        tracing::error!(?err, "Persisting interface state to config failed");
                         process::exit(1);
                     }
                 }
@@ -114,6 +114,7 @@ async fn main() -> Result<()> {
                 }
             }
         }
+
         Command::Status { json, public_key: _ } => {
             let res = status::run(&ops);
             match res {
@@ -139,6 +140,7 @@ async fn main() -> Result<()> {
             public_key,
             json,
             force_ip,
+            persist_config,
         } => {
             let variant = if let Some(force_ip) = force_ip {
                 RunVariant::UseIP(force_ip)
@@ -147,6 +149,11 @@ async fn main() -> Result<()> {
                 RunVariant::GenerateIP(rand)
             };
             let register = register::run(&ops, variant, &public_key);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match register {
                 Ok(register) => {
                     if json {
@@ -166,8 +173,17 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::Unregister { public_key, json } => {
+        Command::Unregister {
+            public_key,
+            json,
+            persist_config,
+        } => {
             let unregister = unregister::run(&ops, &public_key);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match unregister {
                 Ok(_) => {
                     // there is no output for this command
@@ -189,8 +205,14 @@ async fn main() -> Result<()> {
         Command::RemoveExpired {
             client_handshake_timeout_s,
             json,
+            persist_config,
         } => {
             let remove_expired = remove::expired(&ops, &client_handshake_timeout_s);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match remove_expired {
                 Ok(remove_expired) => {
                     if json {
@@ -210,8 +232,13 @@ async fn main() -> Result<()> {
             }
         }
 
-        Command::RemoveNeverConnected { json } => {
+        Command::RemoveNeverConnected { json, persist_config } => {
             let remove_never_connected = remove::never_connected(&ops);
+            if persist_config {
+                if let Err(err) = conf::save_file(&ops) {
+                    tracing::error!(?err, "Persisting interface state to config failed");
+                }
+            }
             match remove_never_connected {
                 Ok(remove_never_connected) => {
                     if json {
