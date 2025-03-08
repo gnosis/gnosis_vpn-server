@@ -20,7 +20,7 @@ pub struct Dump {
 pub enum Error {
     NoInterface,
     Generic(String),
-    IOError(String),
+    IO(String),
 }
 
 pub fn set_interface(ops: &Ops) -> Result<(), Error> {
@@ -79,9 +79,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
         tracing::warn!("wg showconf stderr: {}", String::from_utf8_lossy(&output.stderr));
     }
 
-    let mut f = File::create(&ops.wg_interface_config).map_err(|err| Error::IOError(err.to_string()))?;
-    f.write_all(&output.stdout)
-        .map_err(|err| Error::IOError(err.to_string()))?;
-
+    let mut f = File::create(&ops.wg_interface_config).map_err(|err| Error::IO(err.to_string()))?;
+    f.write_all(&output.stdout).map_err(|err| Error::IO(err.to_string()))?;
     Ok(())
 }
