@@ -53,7 +53,7 @@ pub struct PublicKeys {
 
 #[derive(Debug, Serialize)]
 pub enum Error {
-    NoDevice,
+    NoInterface,
     WgShow(show::Error),
     SystemTime(String),
 }
@@ -93,7 +93,7 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
 pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
     let interface = match ops.interface() {
         Some(interface) => interface,
-        None => return Err(Error::NoDevice),
+        None => return Err(Error::NoInterface),
     };
     let dump = show::dump(interface).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
@@ -135,7 +135,7 @@ pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
 pub fn run(ops: &Ops) -> Result<Status, Error> {
     let interface = match ops.interface() {
         Some(interface) => interface,
-        None => return Err(Error::NoDevice),
+        None => return Err(Error::NoInterface),
     };
     let dump = show::dump(interface).map_err(Error::WgShow)?;
 

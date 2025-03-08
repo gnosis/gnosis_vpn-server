@@ -20,7 +20,7 @@ pub struct RemoveNeverConnected {
 
 #[derive(Debug, Serialize)]
 pub enum Error {
-    NoDevice,
+    NoInterface,
     WgShow(show::Error),
     Unregister(unregister::Error),
     SystemTime(String),
@@ -30,11 +30,11 @@ pub fn cron(ops: &Ops, once_not_connected: &[String]) -> Result<Vec<String>, Err
     let _ = expired(ops, &None)?;
 
     // determine never connected
-    let device = match ops.device() {
-        Some(device) => device,
-        None => return Err(Error::NoDevice),
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
     };
-    let dump = show::dump(device).map_err(Error::WgShow)?;
+    let dump = show::dump(interface).map_err(Error::WgShow)?;
     let public_keys = dump
         .peers
         .iter()
@@ -55,14 +55,14 @@ pub fn cron(ops: &Ops, once_not_connected: &[String]) -> Result<Vec<String>, Err
 }
 
 pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
-    let device = match ops.device() {
-        Some(device) => device,
-        None => return Err(Error::NoDevice),
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
     };
     let client_handshake_timeout = overwrite_client_handshake_timeout_s
         .map(Duration::from_secs)
         .unwrap_or(ops.client_handshake_timeout);
-    let dump = show::dump(device).map_err(Error::WgShow)?;
+    let dump = show::dump(interface).map_err(Error::WgShow)?;
     let (hand_shaked_peers, bad_peers) = dump
         .peers
         .iter()
@@ -99,11 +99,11 @@ pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) ->
 }
 
 pub fn never_connected(ops: &Ops) -> Result<RemoveNeverConnected, Error> {
-    let device = match ops.device() {
-        Some(device) => device,
-        None => return Err(Error::NoDevice),
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
     };
-    let dump = show::dump(device).map_err(Error::WgShow)?;
+    let dump = show::dump(interface).map_err(Error::WgShow)?;
     let public_keys = dump
         .peers
         .iter()

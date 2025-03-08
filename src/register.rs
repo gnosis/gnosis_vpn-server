@@ -19,7 +19,7 @@ pub struct Register {
 
 #[derive(Debug, Serialize)]
 pub enum Error {
-    NoDevice,
+    NoInterface,
     NoFreeIp,
     IpAlreadyTaken,
     Generic(String),
@@ -56,7 +56,7 @@ pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Registe
 pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register, Error> {
     let interface = match ops.interface() {
         Some(interface) => interface,
-        None => return Err(Error::NoDevice),
+        None => return Err(Error::NoInterface),
     };
     let dump = show::dump(interface).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);

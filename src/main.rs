@@ -12,6 +12,7 @@ use tokio::time;
 
 use crate::config::Config;
 use crate::register::RunVariant;
+use crate::wg::conf;
 
 mod api_error;
 mod cli;
@@ -36,7 +37,7 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Serve {
             periodically_run_cleanup,
-            sync_wg_device,
+            sync_wg_interface,
         } => {
             // install global collector configured based on RUST_LOG env var.
             tracing_subscriber::fmt::init();
@@ -55,6 +56,17 @@ async fn main() -> Result<()> {
                 address = ops.rocket_address,
                 port = ops.rocket_port
             );
+
+            if sync_wg_interface {
+                match conf::set_interface(&ops) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        tracing::error!("Error setting wg interface: {:?}", err);
+                        process::exit(1);
+                    }
+                }
+            }
+
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let rocket = rocket::custom(figment)
                 .manage(ops.clone())
@@ -66,9 +78,20 @@ async fn main() -> Result<()> {
                 .launch();
 
             if periodically_run_cleanup {
+                let ops = ops.clone();
                 tokio::spawn(async move { run_cron(&ops).await });
             }
             rocket.await?;
+
+            if sync_wg_interface {
+                match conf::save_file(&ops) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        tracing::error!("Error saving wg interface: {:?}", err);
+                        process::exit(1);
+                    }
+                }
+            }
         }
 
         Command::Status { json, public_key } if public_key.is_some() => {

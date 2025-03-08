@@ -14,7 +14,7 @@ pub struct Unregister {
 
 #[derive(Debug, Serialize)]
 pub enum Error {
-    NoDevice,
+    NoInterface,
     Generic(String),
 }
 
@@ -38,14 +38,14 @@ pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<Status, Json<ApiError
 }
 
 pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
-    let device = match ops.device() {
-        Some(device) => device,
-        None => return Err(Error::NoDevice),
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return Err(Error::NoInterface),
     };
 
     let res_output = Command::new("wg")
         .arg("set")
-        .arg(device)
+        .arg(interface)
         .arg("peer")
         .arg(public_key)
         .arg("remove")

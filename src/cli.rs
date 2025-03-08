@@ -29,7 +29,7 @@ pub enum Command {
         periodically_run_cleanup: bool,
         /// run wg-quick commands to update wg device and persist configuration
         #[arg(long)]
-        sync_wg_device: bool,
+        sync_wg_interface: bool,
     },
 
     /// Access current wireguard status of all clients or a single client

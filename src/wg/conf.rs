@@ -23,7 +23,7 @@ pub enum Error {
     IOError(String),
 }
 
-pub fn set_device(ops: &Ops) -> Result<(), Error> {
+pub fn set_interface(ops: &Ops) -> Result<(), Error> {
     let interface = match ops.interface() {
         Some(interface) => interface,
         None => return Err(Error::NoInterface),
