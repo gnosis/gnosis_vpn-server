@@ -29,6 +29,7 @@ pub fn set_interface(ops: &Ops) -> Result<(), Error> {
         None => return Err(Error::NoInterface),
     };
 
+    // 1. create device using ip link
     let res_iplink = Command::new("ip")
         .arg("link")
         .arg("add")
@@ -52,9 +53,13 @@ pub fn set_interface(ops: &Ops) -> Result<(), Error> {
     }
 
     if !output_iplink.stderr.is_empty() {
-        tracing::warn!("ip link add stderr: {}", String::from_utf8_lossy(&output_iplink.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output_iplink.stderr).to_string(),
+            "ip link add"
+        )
     }
 
+    // 2. apply existing configuration using wg setconf
     let res_setconf = Command::new("wg")
         .arg("setconf")
         .arg(interface)
@@ -73,8 +78,40 @@ pub fn set_interface(ops: &Ops) -> Result<(), Error> {
     }
 
     if !output_setconf.stderr.is_empty() {
-        tracing::warn!("wg setconf stderr: {}", String::from_utf8_lossy(&output_setconf.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output_setconf.stderr).to_string(),
+            "wg setconf"
+        )
     }
+
+    // 3. set recommended MTU 1420
+    let res_mtu = Command::new("ip")
+        .arg("link")
+        .arg("set")
+        .arg("mtu")
+        .arg("1420")
+        .arg("up")
+        .arg("dev")
+        .arg(interface)
+        .output();
+
+    match res_mtu {
+        Ok(output) => {
+            if !output.status.success() {
+                tracing::error!(?output, "ip link set mtu 1420 up dev")
+            }
+
+            if !output.stderr.is_empty() {
+                tracing::warn!(
+                    stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+                    "ip link set mtu 1420 up dev"
+                )
+            }
+        }
+        Err(err) => {
+            tracing::error!(?err, interface, "ip link set mtu 1420 up dev")
+        }
+    };
 
     Ok(())
 }
