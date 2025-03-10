@@ -70,6 +70,7 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let rocket = rocket::custom(figment)
                 .manage(ops.clone())
+                .manage(sync_wg_interface)
                 .mount(
                     "/api/v1/clients",
                     routes![register::api, unregister::api, status::api_single],
@@ -79,12 +80,12 @@ async fn main() -> Result<()> {
 
             if periodically_run_cleanup {
                 let ops = ops.clone();
-                tokio::spawn(async move { run_cron(&ops).await });
+                tokio::spawn(async move { run_cron(&ops, sync_wg_interface).await });
             }
             rocket.await?;
 
             if sync_wg_interface {
-                match conf::save_file(&ops) {
+                match conf::remove_interface(&ops) {
                     Ok(_) => (),
                     Err(err) => {
                         tracing::error!(?err, "Persisting interface state to config failed");
@@ -262,7 +263,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_cron(ops: &Ops) {
+async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
     let mut cron = time::interval(ops.client_cleanup_interval);
     // first tick completes immediately
     cron.tick().await;
@@ -277,6 +278,14 @@ async fn run_cron(ops: &Ops) {
         match remove::cron(ops, &once_not_connected) {
             Ok(newly_not_connected) => {
                 once_not_connected = newly_not_connected;
+                if sync_wg_interface {
+                    match conf::save_file(&ops) {
+                        Ok(_) => (),
+                        Err(err) => {
+                            tracing::error!(?err, "Persisting interface state to config failed");
+                        }
+                    }
+                }
             }
             Err(err) => {
                 tracing::error!("Error during clients cleanup: {:?}", err);

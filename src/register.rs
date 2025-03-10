@@ -8,6 +8,7 @@ use std::process::Command;
 
 use crate::api_error::ApiError;
 use crate::ops::Ops;
+use crate::wg::conf;
 use crate::wg::show;
 
 #[derive(Clone, Debug, Serialize)]
@@ -38,12 +39,27 @@ pub enum RunVariant {
 }
 
 #[post("/register", data = "<input>")]
-pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<(Status, Json<Register>), Json<ApiError>> {
+pub fn api(
+    input: Json<Input>,
+    sync_wg_interface: &State<bool>,
+    ops: &State<Ops>,
+) -> Result<(Status, Json<Register>), Json<ApiError>> {
     let rand = rand::rng();
     let res = run(ops, RunVariant::GenerateIP(rand), input.public_key.as_str());
 
     match res {
-        Ok(reg) if reg.newly_registered => Ok((Status::Created, Json(reg))),
+        Ok(reg) if reg.newly_registered => {
+            if **sync_wg_interface {
+                match conf::save_file(&ops) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        tracing::error!(?err, "Persisting interface state to config failed");
+                    }
+                }
+            }
+
+            Ok((Status::Created, Json(reg)))
+        }
         Ok(reg) => Ok((Status::Ok, Json(reg))),
         Err(Error::NoFreeIp) => Err(Json(ApiError::new(404, "Not Found", "No free IP available"))),
         Err(err) => {
