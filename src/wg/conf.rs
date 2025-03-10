@@ -175,7 +175,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
 
     let prepend_str = format!("Maintained by {}\n", env!("CARGO_PKG_NAME"));
     let prepend = prepend_str.as_bytes();
-    let mut content = Vec::with_capacity(&prepend.len() + output.stdout.len());
+    let mut content = Vec::with_capacity(prepend.len() + output.stdout.len());
     content.extend_from_slice(prepend);
     content.extend_from_slice(&output.stdout);
     let mut f = File::create(&ops.wg_interface_config).map_err(|err| Error::IO(err.to_string()))?;

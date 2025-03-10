@@ -50,7 +50,7 @@ pub fn api(
     match res {
         Ok(reg) if reg.newly_registered => {
             if **sync_wg_interface {
-                match conf::save_file(&ops) {
+                match conf::save_file(ops) {
                     Ok(_) => (),
                     Err(err) => {
                         tracing::error!(?err, "Persisting interface state to config failed");

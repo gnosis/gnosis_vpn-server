@@ -279,7 +279,7 @@ async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
             Ok(newly_not_connected) => {
                 once_not_connected = newly_not_connected;
                 if sync_wg_interface {
-                    match conf::save_file(&ops) {
+                    match conf::save_file(ops) {
                         Ok(_) => (),
                         Err(err) => {
                             tracing::error!(?err, "Persisting interface state to config failed");
