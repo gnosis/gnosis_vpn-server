@@ -55,6 +55,7 @@ pub fn set_interface(ops: &Ops) -> Result<(), Error> {
     if !output_iplink.stderr.is_empty() {
         tracing::warn!(
             stderr = String::from_utf8_lossy(&output_iplink.stderr).to_string(),
+            interface,
             "ip link add"
         )
     }
@@ -80,6 +81,7 @@ pub fn set_interface(ops: &Ops) -> Result<(), Error> {
     if !output_setconf.stderr.is_empty() {
         tracing::warn!(
             stderr = String::from_utf8_lossy(&output_setconf.stderr).to_string(),
+            interface,
             "wg setconf"
         )
     }
@@ -98,18 +100,19 @@ pub fn set_interface(ops: &Ops) -> Result<(), Error> {
     match res_mtu {
         Ok(output) => {
             if !output.status.success() {
-                tracing::error!(?output, "ip link set mtu 1420 up dev")
+                tracing::error!(?output, interface, "ip link set mtu 1420 up dev failed")
             }
 
             if !output.stderr.is_empty() {
                 tracing::warn!(
                     stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+                    interface,
                     "ip link set mtu 1420 up dev"
                 )
             }
         }
         Err(err) => {
-            tracing::error!(?err, interface, "ip link set mtu 1420 up dev")
+            tracing::error!(?err, interface, "ip link set mtu 1420 up dev failed")
         }
     };
 
@@ -142,8 +145,9 @@ pub fn remove_interface(ops: &Ops) -> Result<(), Error> {
 
     if !output_iplink.stderr.is_empty() {
         tracing::warn!(
-            "ip link delete stderr: {}",
-            String::from_utf8_lossy(&output_iplink.stderr)
+            stderr = String::from_utf8_lossy(&output_iplink.stderr).to_string(),
+            interface,
+            "ip link delete"
         );
     }
 
@@ -170,7 +174,11 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
     }
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg showconf stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+            interface,
+            "wg showconf"
+        )
     }
 
     let prepend_str = format!("Maintained by {}\n", env!("CARGO_PKG_NAME"));

@@ -44,7 +44,7 @@ pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>
         }
 
         Err(err) => {
-            tracing::error!("Error during API unregister: {:?}", err);
+            tracing::error!(?err, "POST /unregister failed");
             Err(Json(ApiError::internal_server_error()))
         }
     }
@@ -75,7 +75,11 @@ pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
     };
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg set peer stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+            interface,
+            "wg set peer"
+        )
     }
 
     if output.status.success() {

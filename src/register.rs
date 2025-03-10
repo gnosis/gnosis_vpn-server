@@ -63,7 +63,7 @@ pub fn api(
         Ok(reg) => Ok((Status::Ok, Json(reg))),
         Err(Error::NoFreeIp) => Err(Json(ApiError::new(404, "Not Found", "No free IP available"))),
         Err(err) => {
-            tracing::error!("Error during API register: {:?}", err);
+            tracing::error!(?err, "POST /register failed");
             Err(Json(ApiError::internal_server_error()))
         }
     }
@@ -121,7 +121,12 @@ pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register,
     };
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg set peer stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+            interface,
+            ?ip,
+            "wg set peer"
+        );
     }
 
     if output.status.success() {

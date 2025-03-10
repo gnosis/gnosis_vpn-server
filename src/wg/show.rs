@@ -37,7 +37,10 @@ pub fn dump(interface: &str) -> Result<Dump, Error> {
     }
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg show dump stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+            "wg show dump"
+        );
     }
 
     let content = match String::from_utf8(output.stdout) {

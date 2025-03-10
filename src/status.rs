@@ -68,7 +68,7 @@ pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSin
             _ => Ok(Json(status)),
         },
         Err(err) => {
-            tracing::error!("Error during API status: {:?}", err);
+            tracing::error!(?err, "GET /status/<public_key> failed");
             Err(Json(ApiError::internal_server_error()))
         }
     }
@@ -84,7 +84,7 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
             connected: status.slots.connected,
         })),
         Err(err) => {
-            tracing::error!("Error during API status: {:?}", err);
+            tracing::error!(?err, "GET /status failed");
             Err(Json(ApiError::internal_server_error()))
         }
     }
