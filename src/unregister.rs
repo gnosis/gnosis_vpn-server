@@ -6,6 +6,7 @@ use std::process::Command;
 
 use crate::api_error::ApiError;
 use crate::ops::Ops;
+use crate::wg::conf;
 
 #[derive(Debug, Serialize)]
 pub struct Unregister {
@@ -25,13 +26,25 @@ pub struct Input {
 }
 
 #[post("/unregister", data = "<input>")]
-pub fn api(input: Json<Input>, ops: &State<Ops>) -> Result<Status, Json<ApiError>> {
+pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>) -> Result<Status, Json<ApiError>> {
     let res = run(ops, input.public_key.as_str());
 
     match res {
-        Ok(_unreg) => Ok(Status::NoContent),
+        Ok(_unreg) => {
+            if **sync_wg_interface {
+                match conf::save_file(ops) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        tracing::error!(?err, "Persisting interface state to config failed");
+                    }
+                }
+            }
+
+            Ok(Status::NoContent)
+        }
+
         Err(err) => {
-            tracing::error!("Error during API unregister: {:?}", err);
+            tracing::error!(?err, "POST /unregister failed");
             Err(Json(ApiError::internal_server_error()))
         }
     }
@@ -62,7 +75,11 @@ pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
     };
 
     if !output.stderr.is_empty() {
-        tracing::warn!("wg set peer stderr: {}", String::from_utf8_lossy(&output.stderr));
+        tracing::warn!(
+            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
+            interface,
+            "wg set peer"
+        )
     }
 
     if output.status.success() {
