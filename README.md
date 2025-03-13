@@ -2,7 +2,7 @@
 
 This binary aims to run alongside and manages a WireGuard server.
 
-## Usage without Client Support
+## Usage without GnosisVPN Client Communication
 
 Sample configuration file for the current server side administration tasks:
 
@@ -28,7 +28,7 @@ Add a new client via client public key, run as root:
 gnosis_vpn-server -c config.toml register <PUBLIC_KEY> --json --persist-config
 ```
 
-## Usage with Client Support
+## Usage with GnosisVPN Client Communication
 
 Let the server manage wg clients without manual intervention.
 This will periodically remove disconnected clients.
@@ -47,4 +47,22 @@ Run as an HTTP server:
 
 ```bash
 gnosis_vpn-server -c config.toml serve --sync-wg-interface --periodically-run-cleanup
+```
+
+## Deployment
+
+Show potential deployment targets:
+
+`nix flake show`
+
+Build for a target, e.g. `x86_64-linux`:
+
+`nix build .#gvpn-x86_64-linux`
+
+The resulting binary is in `result/bin/`:
+
+```
+> ls -la result/bin/
+total 6736
+-r-xr-xr-x 1 root root 6886688  1. Jan 1970  gnosis_vpn-server
 ```
