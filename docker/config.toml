@@ -1,0 +1,4 @@
+# IP range of allowed VPN clients
+allowed_client_ips = { start = "10.128.0.2", end = "10.128.0.11" }
+# wg server configuration path
+wireguard_config_path = "./wggvpn.conf"

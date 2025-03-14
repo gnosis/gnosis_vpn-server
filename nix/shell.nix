@@ -32,7 +32,6 @@ craneLib.devShell {
 
     # development helper
     cargo-outdated
-    just
 
     # github integration
     gh
