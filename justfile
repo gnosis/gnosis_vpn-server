@@ -14,7 +14,7 @@ docker-run: docker
 
 # enter docker container interactively
 docker-enter: docker
-    docker run --rm -p 8000:8000 --cap-add=NET_ADMIN --name gnosis_vpn-server-dev -it --entrypoint sh gnosis_vpn-server
+    docker run --rm -p 8000:8000 --cap-add=NET_ADMIN --name gnosis_vpn-server-dev -it --entrypoint bash gnosis_vpn-server
 
 # setup server
 setup: docker
