@@ -1,11 +1,18 @@
-FROM ubuntu:latest
+FROM alpine:3.21
+
+# enable wireguard
+# RUN \
+    # apk add wireguard-tools-wg-quick iptables wireguard-tools iproute2 && \
+    # rm -rf /tmp/*
+
+# add local files
+COPY ./config.toml config.toml
+COPY ./wggvpn.conf wggvpn.conf
+COPY ./gnosis_vpn-server gnosis_vpn-server
 
 WORKDIR /app
-COPY ./config.toml config.toml
-COPY ./gnosis_vpn-server gnosis_vpn-server
-RUN umask 077 && wg genkey > privkey
-RUN ip link add dev wggvpn type wireguard
-RUN wg set wggvpn private-key privkey listen-port 51820
-RUN wg showconf wggvpn > wggvpn.conf
+
+# port handling
+EXPOSE 51820/udp
 
 CMD ["./gnosis_vpn-server", "-config", "config.toml", "serve", "--periodically-run-cleanup", "--sync-wg-interface"]
