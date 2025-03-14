@@ -10,5 +10,11 @@ docker: build
     chmod 775 docker/gnosis_vpn-server
     docker build --platform linux/x86_64 -t gnosis_vpn-server docker
 
+docker-run: docker
+    docker run --rm --cap-add=NET_ADMIN --name gnosis_vpn-server-dev gnosis_vpn-server
+
+docker-enter: docker
+    docker run --rm --cap-add=NET_ADMIN --name gnosis_vpn-server-dev -it --entrypoint sh gnosis_vpn-server
+
 # setup server
 setup: docker
