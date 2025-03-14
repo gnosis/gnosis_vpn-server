@@ -1,9 +1,9 @@
 FROM alpine:3.21
 
 # enable wireguard
-# RUN \
-    # apk add wireguard-tools-wg-quick iptables wireguard-tools iproute2 && \
-    # rm -rf /tmp/*
+RUN \
+    apk add wireguard-tools && \
+    rm -rf /tmp/*
 
 WORKDIR /app
 
