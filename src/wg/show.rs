@@ -17,20 +17,19 @@ pub struct Dump {
 #[derive(Debug, Serialize)]
 pub enum Error {
     Generic(String),
+    IO(String),
     NoOutputLines,
     WrongNumberOfFieldsInServerLine,
     WrongNumberOfFieldsInPeerLine,
 }
 
 pub fn dump(interface: &str) -> Result<Dump, Error> {
-    let res_output = Command::new("wg").arg("show").arg(interface).arg("dump").output();
-
-    let output = match res_output {
-        Ok(output) => output,
-        Err(err) => {
-            return Err(Error::Generic(format!("wg show {} dump failed: {}", interface, err)));
-        }
-    };
+    let output = Command::new("wg")
+        .arg("show")
+        .arg(interface)
+        .arg("dump")
+        .output()
+        .map_err(|err| Error::IO(format!("wg show {} dump failed: {:?}", interface, err)))?;
 
     if !output.status.success() {
         return Err(Error::Generic(format!("wg show dump failed: {:?}", output)));

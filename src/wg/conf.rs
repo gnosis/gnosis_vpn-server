@@ -29,14 +29,11 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
         None => return Err(Error::NoInterface),
     };
 
-    let res_output = Command::new("wg").arg("showconf").arg(interface).output();
-
-    let output = match res_output {
-        Ok(output) => output,
-        Err(err) => {
-            return Err(Error::Generic(format!("wg showconf {} failed: {:?}", interface, err)));
-        }
-    };
+    let output = Command::new("wg")
+        .arg("showconf")
+        .arg(interface)
+        .output()
+        .map_err(|err| Error::IO(format!("wg showconf {} failed: {:?}", interface, err)))?;
 
     if !output.status.success() {
         return Err(Error::Generic(format!("wg showconf failed: {:?}", output)));

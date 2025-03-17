@@ -2,11 +2,11 @@ use rocket::http::Status;
 use rocket::serde::{json::Json, Deserialize};
 use rocket::State;
 use serde::Serialize;
-use std::process::Command;
 
 use crate::api_error::ApiError;
 use crate::ops::Ops;
 use crate::wg::conf;
+use crate::wg::set;
 
 #[derive(Debug, Serialize)]
 pub struct Unregister {
@@ -16,7 +16,7 @@ pub struct Unregister {
 #[derive(Debug, Serialize)]
 pub enum Error {
     NoInterface,
-    Generic(String),
+    WgSet(set::Error),
 }
 
 #[derive(Deserialize)]
@@ -56,37 +56,8 @@ pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
         None => return Err(Error::NoInterface),
     };
 
-    let res_output = Command::new("wg")
-        .arg("set")
-        .arg(interface)
-        .arg("peer")
-        .arg(public_key)
-        .arg("remove")
-        .output();
-
-    let output = match res_output {
-        Ok(output) => output,
-        Err(err) => {
-            return Err(Error::Generic(format!(
-                "wg set peer {} remove failed: {}",
-                public_key, err
-            )));
-        }
-    };
-
-    if !output.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
-            interface,
-            "wg set peer"
-        )
-    }
-
-    if output.status.success() {
-        Ok(Unregister {
-            public_key: public_key.to_string(),
-        })
-    } else {
-        Err(Error::Generic(format!("wg remove peer failed: {:?}", output)))
-    }
+    set::remove_peer(interface, public_key).map_err(Error::WgSet)?;
+    Ok(Unregister {
+        public_key: public_key.to_string(),
+    })
 }
