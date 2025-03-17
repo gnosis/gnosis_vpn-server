@@ -13,6 +13,7 @@ COPY ./wggvpn.conf wggvpn.conf
 COPY ./gnosis_vpn-server gnosis_vpn-server
 
 # port handling
-EXPOSE 51822/udp
+EXPOSE 8000/tcp
+EXPOSE 51820/udp
 
 CMD ["./gnosis_vpn-server", "--config-file", "./config.toml", "serve", "--periodically-run-cleanup", "--sync-wg-interface"]

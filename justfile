@@ -10,11 +10,11 @@ docker: build
 
 # run docker container
 docker-run: docker
-    docker run --rm -p 8000:8000 --cap-add=NET_ADMIN --name gnosis_vpn-server-dev gnosis_vpn-server
+    docker run --rm --detach --publish 8000:8000 --publish 51822:51820/udp --cap-add=NET_ADMIN --name gnosis_vpn-server-dev gnosis_vpn-server
 
 # enter docker container interactively
 docker-enter: docker
-    docker run --rm -p 8000:8000 --cap-add=NET_ADMIN --name gnosis_vpn-server-dev -it --entrypoint bash gnosis_vpn-server
+    docker run --name gnosis_vpn-server-dev -it gnosis_vpn-server-dev bash
 
 # setup server
 setup: docker
