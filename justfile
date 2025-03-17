@@ -14,7 +14,7 @@ docker-run: docker
 
 # enter docker container interactively
 docker-enter: docker
-    docker run --name gnosis_vpn-server-dev -it gnosis_vpn-server-dev bash
+    docker exec --interactive --tty gnosis_vpn-server-dev bash
 
 # setup server
 setup: docker
