@@ -1,0 +1,18 @@
+---
+services:
+  gnosis_vpn-server:
+    container_name: gnosis_vpn-server
+    hostname: gvpn-server
+    build:
+      context: ./docker-server
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8000:8000/tcp
+  gnosis_vpn-client:
+    container_name: gnosis_vpn-client
+    hostname: gvpn-client
+    build:
+      context: ./docker-client
+    cap_add:
+      - NET_ADMIN

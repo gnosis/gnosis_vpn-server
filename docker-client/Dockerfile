@@ -9,6 +9,7 @@ WORKDIR /app
 
 # add local files
 COPY ./wgclient.conf wgclient.conf
+COPY ./monitor.sh monitor.sh
 
 # port handling
 EXPOSE 51820/udp
