@@ -10,9 +10,12 @@ docker-build: build
 
 # run docker container detached
 docker-run:
-    docker run --rm --detach --env WG_PRIVATE_KEY=$(wg genkey) \
-        --cap-add=NET_ADMIN --publish 8000:8000 --publish 51822:51820/udp \
-        --name gnosis_vpn-server-dev gnosis_vpn-server
+    docker run --rm --detach \
+        --env PRIVATE_KEY=$(wg genkey) \
+        --publish 8000:8000 \
+        --publish 51820:51820/udp \
+        --cap-add=NET_ADMIN \
+        --name gnosis_vpn-server gnosis_vpn-server
 
 # enter docker container interactively
 docker-enter:

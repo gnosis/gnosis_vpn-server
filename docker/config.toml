@@ -1,4 +1,4 @@
-allowed_client_ips = { start = "10.128.0.2", end = "10.128.0.11" }
+allowed_client_ips = { start = "10.129.0.2", end = "10.129.0.11" }
 wireguard_config_path = "./wggvpn.conf"
 endpoint = "0.0.0.0:8000"
 client_handshake_timeout_s = 300
