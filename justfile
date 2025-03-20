@@ -13,7 +13,7 @@ docker-run:
     docker run --rm --detach \
         --env PRIVATE_KEY=$(wg genkey) \
         --publish 8000:8000 \
-        --publish 51820:51820/udp \
+        --publish 51821:51820/udp \
         --cap-add=NET_ADMIN \
         --name gnosis_vpn-server gnosis_vpn-server
 
