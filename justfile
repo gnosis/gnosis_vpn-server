@@ -9,9 +9,12 @@ docker-build: build
     docker build --platform linux/x86_64 -t gnosis_vpn-server docker/
 
 # run docker container detached
-docker-run:
+docker-run private_key='':
+    #!/usr/bin/env bash
+    set -o errexit -o nounset -o pipefail
+    PRIVATE_KEY=$(if [ "{{ private_key }}" = "" ]; then wg genkey; else echo "{{ private_key }}"; fi)
     docker run --rm --detach \
-        --env PRIVATE_KEY=$(wg genkey) \
+        --env PRIVATE_KEY=$PRIVATE_KEY \
         --publish 8000:8000 \
         --publish 51821:51820/udp \
         --cap-add=NET_ADMIN \
@@ -20,3 +23,10 @@ docker-run:
 # enter docker container interactively
 docker-enter:
     docker exec --interactive --tty gnosis_vpn-server-dev bash
+
+system-test:
+    #!/usr/bin/env bash
+    set -o errexit -o nounset -o pipefail
+    SERVER_PRIVATE_KEY=$(wg genkey)
+    just docker-build
+    just docker-run private_key=$SERVER_PRIVATE_KEY
