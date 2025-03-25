@@ -18,6 +18,7 @@ docker-run private_key='':
         --publish 8000:8000 \
         --publish 51821:51820/udp \
         --cap-add=NET_ADMIN \
+        --add-host=host.docker.internal:host-gateway \
         --name gnosis_vpn-server gnosis_vpn-server
 
 # enter docker container interactively
