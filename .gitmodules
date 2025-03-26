@@ -1,0 +1,3 @@
+[submodule "modules/hoprnet"]
+	path = modules/hoprnet
+	url = https://github.com/hoprnet/hoprnet
