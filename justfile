@@ -25,16 +25,19 @@ docker-run private_key='':
 docker-enter:
     docker exec --interactive --tty gnosis_vpn-server-dev bash
 
-system-test:
+# checkout submodules
+submodules:
+    git submodule update --init --force
+
+# run full system test
+system-test: submodules
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
-    PRIVATE_KEY=$(wg genkey)
+    CLIENT_PRIVATE_KEY=$(wg genkey)
     SERVER_PRIVATE_KEY=$(wg genkey)
     just docker-build
     just docker-run private_key=$SERVER_PRIVATE_KEY
-    cd hoprnet
-    nix develop
-    cargo build --release
-    export PATH=./target/release/:$PATH
-    make localcluster
-    IP=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $privkey | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
+    pushd modules/hoprnet
+    PID=$(nix develop .#cluster --command make localcluster-expose1 &)
+    # IP=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $privkey | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
+    echo $PID
