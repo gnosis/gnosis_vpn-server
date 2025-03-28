@@ -38,10 +38,29 @@ start-cluster:
 system-test: submodules docker-build
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
-    CLIENT_PRIVATE_KEY=$(wg genkey)
-    SERVER_PRIVATE_KEY=$(wg genkey)
-    just docker-run private_key=$SERVER_PRIVATE_KEY
-    pushd modules/hoprnet
-    PID=$(nix develop .#cluster --command make localcluster-expose1 &)
-    # IP=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $privkey | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
-    echo $PID
+
+    echo "Starting cluster..."
+    just start-cluster > cluster.log 2>&1 &
+    CLUSTER_PID=$!
+    echo "Started cluster with PID: $CLUSTER_PID"
+
+    # Trap to ensure that a Ctrl+C (or termination) will send SIGINT to the cluster process
+    # trap "echo 'Terminating cluster...'; kill -INT $CLUSTER_PID; wait $CLUSTER_PID" SIGINT SIGTERM EXIT
+
+    tail -f cluster.log &
+    TAIL_PID=$!
+
+    sleep 60
+    echo "Killing tail..."
+    kill $TAIL_PID
+    sleep 5
+    echo "Killing cluster..."
+    kill -INT $CLUSTER_PID
+
+    # CLIENT_PRIVATE_KEY=$(wg genkey)
+    # SERVER_PRIVATE_KEY=$(wg genkey)
+    # just docker-run private_key=$SERVER_PRIVATE_KEY
+    # pushd modules/hoprnet
+    # PID=$(nix develop .#cluster --command make localcluster-expose1 &)
+    # # IP=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $privkey | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
+    # echo $PID
