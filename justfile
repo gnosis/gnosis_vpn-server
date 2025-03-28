@@ -29,13 +29,17 @@ docker-enter:
 submodules:
     git submodule update --init --force
 
+start-cluster:
+    #!/usr/bin/env bash
+    cd modules/hoprnet
+    nix develop .#cluster --command make localcluster-expose1
+
 # run full system test
-system-test: submodules
+system-test: submodules docker-build
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
     CLIENT_PRIVATE_KEY=$(wg genkey)
     SERVER_PRIVATE_KEY=$(wg genkey)
-    just docker-build
     just docker-run private_key=$SERVER_PRIVATE_KEY
     pushd modules/hoprnet
     PID=$(nix develop .#cluster --command make localcluster-expose1 &)
