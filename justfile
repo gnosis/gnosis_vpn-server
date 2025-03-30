@@ -44,9 +44,6 @@ system-test: submodules docker-build
     CLUSTER_PID=$!
     echo "Started cluster with PID: $CLUSTER_PID"
 
-    # Trap to ensure that a Ctrl+C (or termination) will send SIGINT to the cluster process
-    # trap "echo 'Terminating cluster...'; kill -INT $CLUSTER_PID; wait $CLUSTER_PID" SIGINT SIGTERM EXIT
-
     tail -f cluster.log &
     TAIL_PID=$!
 
