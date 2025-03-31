@@ -39,17 +39,34 @@ system-test: submodules docker-build
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
 
-    echo "Starting cluster..."
+    ###
+    ## PHASE 1: ready local cluster
+
+    # 1a: start cluster
     just start-cluster > cluster.log 2>&1 &
     CLUSTER_PID=$!
-    echo "Started cluster with PID: $CLUSTER_PID"
+    echo "[PHASE1] Starting cluster with PID: $CLUSTER_PID"
 
-    tail -f cluster.log &
-    TAIL_PID=$!
+    # 1b: wait for nodes
+    EXPECTED_PATTERN="All nodes ready"
+    TIMEOUT_S=300
+    ENDTIME=$(($(date +%s) + TIMEOUT_S))
+    echo "[PHASE1] Waiting for log pattern: '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
-    sleep 60
-    echo "Killing tail..."
-    kill $TAIL_PID
+    while true; do
+        if grep -q "$EXPECTED_PATTERN" cluster.log; then
+            echo "[PHASE1] ${EXPECTED_PATTERN}"
+            break
+        fi
+        if [ $(date +%s) -gt $ENDTIME ]; then
+            echo "[PHASE1] Timeout reached"
+            kill -INT $CLUSTER_PID
+            wait $CLUSTER_PID
+            exit 1
+        fi
+        sleep 1
+    done
+
     sleep 5
     echo "Killing cluster..."
     kill -INT $CLUSTER_PID
