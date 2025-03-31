@@ -51,9 +51,11 @@ system-test: submodules docker-build
         # Send SIGINT to the entire process group (negative PID)
         timeout --kill-after=1m 30s kill -INT -- -$CLUSTER_PID
 
-        echo "[CLEANUP] Shutting down container"
-        # Ignore docker stop errors
+        echo "[CLEANUP] Shutting down server container"
         just docker-stop || true
+
+        echo "[CLEANUP] Shutting down client container"
+        cd modules/gnosis_vpn-client && just docker-stop || true
     }
 
     trap cleanup SIGINT SIGTERM EXIT
@@ -102,7 +104,7 @@ system-test: submodules docker-build
     # 2a: start server
     SERVER_PRIVATE_KEY=$(wg genkey)
     echo "[PHASE2] Starting gnosis_vpn-server with public key: #(echo $SERVER_PRIVATE_KEY | wg pubkey)"
-    just docker-run $SERVER_PRIVATE_KEY
+    SERVER_PRIVATE_KEY=$SERVER_PRIVATE_KEY just docker-run
 
     # 2b: wait for server
     EXPECTED_PATTERN="Rocket has launched"
@@ -136,8 +138,14 @@ system-test: submodules docker-build
     ## PHASE 3: ready gnosis_vpn-client
 
     # 3a: start client
+    pushd modules/gnosis_vpn-client
+    just docker-build
+    ADDRESS="${CLIENT_WG_IP}/32" DESTINATION_PEER_ID="${PEER_ID_LOCAL6}" API_TOKEN="${API_TOKEN_LOCAL1}" \
+      API_PORT="${API_PORT_LOCAL1}" PRIVATE_KEY="${CLIENT_PRIVATE_KEY}" \
+      SERVER_PUBLIC_KEY="$(echo $SERVER_PRIVATE_KEY | wg pubkey)" just docker-run
+    popd
 
-
+    # 3b: wait for client to connect
 
     sleep 5
     exit 0
