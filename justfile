@@ -54,8 +54,8 @@ system-test: submodules docker-build
         echo "[CLEANUP] Shutting down cluster"
         # Send SIGINT to the entire process group (negative PID)
         kill -INT -- -$CLUSTER_PID
-        # Force kill after timeout
-        timeout --kill-after=1m 30s wait $CLUSTER_PID
+        # Force kill after timeout (uses _ as $0 to correctly pass CLUSTER_PID as $1 - wait is not a shell builtin)
+        timeout --kill-after=1m 30s bash -c 'wait "$1"' _ "$CLUSTER_PID"
 
         echo "[CLEANUP] Shutting down container"
         # Ignore docker stop errors
