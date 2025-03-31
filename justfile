@@ -67,6 +67,20 @@ system-test: submodules docker-build
         sleep 1
     done
 
+    # 1c: extract values
+    PEER_ID_LOCAL6=$(awk '/local6/,/Admin UI/ {if ($1 == "Peer" && $2 == "Id:") print $3}' cluster.log)
+    API_TOKEN_LOCAL1=$(awk '/local1/,/Admin UI/ {if ($0 ~ /Admin UI:/) print $0}' cluster.log | sed -n 's/.*apiToken=\(.*\)$/\1/p')
+    API_PORT_LOCAL1=$(awk '/local1/,/Rest API/ {if ($1 == "Rest" && $2 == "API:") print $3}' cluster.log | sed -n 's|.*:\([0-9]\+\)/.*|\1|p')
+
+    echo "[PHASE1] Peer ID (local6): $PEER_ID_LOCAL6"
+    echo "[PHASE1] API Token (local1): $API_TOKEN_LOCAL1"
+    echo "[PHASE1] API Port (local1): $API_PORT_LOCAL1"
+
+    ###
+    ## PHASE 2: ready gnosis_vpn-server
+
+
+
     sleep 5
     echo "Killing cluster..."
     kill -INT $CLUSTER_PID
