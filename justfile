@@ -39,6 +39,12 @@ start-cluster:
     cd modules/hoprnet
     nix develop .#cluster --command make localcluster-expose1
 
+start-client:
+    #!/usr/bin/env bash
+    cd modules/hoprnet
+    nix develop .#cluster --command make localcluster-expose1
+
+
 # run full system test
 system-test: submodules docker-build
     #!/usr/bin/env bash
@@ -66,6 +72,7 @@ system-test: submodules docker-build
         if [ $(date +%s) -gt $ENDTIME ]; then
             echo "[PHASE1] Timeout reached"
             kill -INT $CLUSTER_PID
+            wait $CLUSTER_PID
             exit 1
         fi
         sleep 1
@@ -102,6 +109,7 @@ system-test: submodules docker-build
         if [ $(date +%s) -gt $ENDTIME ]; then
             echo "[PHASE2] Timeout reached"
             kill -INT $CLUSTER_PID
+            wait $CLUSTER_PID
             just docker-stop
             exit 2
         fi
@@ -110,12 +118,16 @@ system-test: submodules docker-build
 
     # 2c: register client key
     CLIENT_PRIVATE_KEY=$(wg genkey)
-    CLIENT_WG_IP=$(curl --silent -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $CLIENT_PRIVATE_KEY | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
+    CLIENT_WG_IP=$(curl --silent -H "Accept: application/json" -H "Content-Type: application/json" -d "{\"public_key\": \"$(echo $CLIENT_PRIVATE_KEY | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
 
     echo "[PHASE2] Client Wireguard IP: $CLIENT_WG_IP"
 
     sleep 5
     echo "[CLEANUP] Shutting down cluster"
     kill -INT $CLUSTER_PID
+    wait $CLUSTER_PID
     echo "[CLEANUP] Shutting down container"
     just docker-stop
+
+    ###
+    ## PHASE 3: ready gnosis_vpn-client
