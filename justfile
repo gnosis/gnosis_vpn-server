@@ -21,6 +21,10 @@ docker-run private_key='':
         --add-host=host.docker.internal:host-gateway \
         --name gnosis_vpn-server gnosis_vpn-server
 
+# stop docker container
+docker-stop:
+    docker stop gnosis_vpn-server
+
 # enter docker container interactively
 docker-enter:
     docker exec --interactive --tty gnosis_vpn-server-dev bash
@@ -29,6 +33,7 @@ docker-enter:
 submodules:
     git submodule update --init --force
 
+# helper to start local cluster from hoprnet submodule
 start-cluster:
     #!/usr/bin/env bash
     cd modules/hoprnet
@@ -79,16 +84,40 @@ system-test: submodules docker-build
     ###
     ## PHASE 2: ready gnosis_vpn-server
 
+    # 2a: start server
+    SERVER_PRIVATE_KEY=$(wg genkey)
+    echo "[PHASE2] Starting gnosis_vpn-server with public key: #(echo $SERVER_PRIVATE_KEY | wg pubkey)"
+    just docker-run $SERVER_PRIVATE_KEY
 
+    # 2b: wait for server
+    EXPECTED_PATTERN="Rocket has launched"
+    TIMEOUT_S=300
+    ENDTIME=$(($(date +%s) + TIMEOUT_S))
+    echo "[PHASE2] Waiting for log pattern: '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
+
+    while true; do
+        if docker logs gnosis_vpn-server | grep -q "$EXPECTED_PATTERN"; then
+            echo "[PHASE2] ${EXPECTED_PATTERN}"
+            break
+        fi
+        if [ $(date +%s) -gt $ENDTIME ]; then
+            echo "[PHASE2] Timeout reached"
+            kill -INT $CLUSTER_PID
+            wait $CLUSTER_PID
+            docker stop gnosis_vpn-server
+            exit 2
+        fi
+        sleep 1
+    done
+
+    # 2c: register client key
+    CLIENT_PRIVATE_KEY=$(wg genkey)
+    CLIENT_WG_IP=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $CLIENT_PRIVATE_KEY | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
+
+    echo "[PHASE2] Client Wireguard IP: $CLIENT_WG_IP"
 
     sleep 5
-    echo "Killing cluster..."
+    echo "Shutting down cluster and stopping containers..."
     kill -INT $CLUSTER_PID
-
-    # CLIENT_PRIVATE_KEY=$(wg genkey)
-    # SERVER_PRIVATE_KEY=$(wg genkey)
-    # just docker-run private_key=$SERVER_PRIVATE_KEY
-    # pushd modules/hoprnet
-    # PID=$(nix develop .#cluster --command make localcluster-expose1 &)
-    # # IP=$(curl -H "Accept: application/json" -H "Content-Type: application/json" -v -d "{\"public_key\": \"$(echo $privkey | wg pubkey)\"}" localhost:8000/api/v1/clients/register | jq -r .ip)
-    # echo $PID
+    wait $CLUSTER_PID
+    docker stop gnosis_vpn-server
