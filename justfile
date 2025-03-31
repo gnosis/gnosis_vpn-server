@@ -9,12 +9,14 @@ docker-build: build
     docker build --platform linux/x86_64 -t gnosis_vpn-server docker/
 
 # run docker container detached
-docker-run private_key='':
+docker-run:
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
-    PRIVATE_KEY=$(if [ "{{ private_key }}" = "" ]; then wg genkey; else echo "{{ private_key }}"; fi)
+
+    priv_key=$(if [ "${PRIVATE_KEY:-}" = "" ]; then wg genkey; else echo "${PRIVATE_KEY}"; fi)
+
     docker run --rm --detach \
-        --env PRIVATE_KEY=$PRIVATE_KEY \
+        --env PRIVATE_KEY=${priv_key} \
         --publish 8000:8000 \
         --publish 51821:51820/udp \
         --cap-add=NET_ADMIN \
@@ -39,12 +41,6 @@ start-cluster:
     cd modules/hoprnet
     nix develop .#cluster --command make localcluster-expose1
 
-start-client:
-    #!/usr/bin/env bash
-    cd modules/hoprnet
-    nix develop .#cluster --command make localcluster-expose1
-
-
 # run full system test
 system-test: submodules docker-build
     #!/usr/bin/env bash
@@ -63,7 +59,7 @@ system-test: submodules docker-build
     trap cleanup SIGINT SIGTERM EXIT
 
 
-    ###
+    ####
     ## PHASE 1: ready local cluster
 
     # 1a: start cluster
@@ -99,7 +95,8 @@ system-test: submodules docker-build
     echo "[PHASE1] API Token (local1): $API_TOKEN_LOCAL1"
     echo "[PHASE1] API Port (local1): $API_PORT_LOCAL1"
 
-    ###
+
+    ####
     ## PHASE 2: ready gnosis_vpn-server
 
     # 2a: start server
@@ -133,6 +130,14 @@ system-test: submodules docker-build
             localhost:8000/api/v1/clients/register | jq -r .ip)
 
     echo "[PHASE2] Client Wireguard IP: $CLIENT_WG_IP"
+
+
+    ####
+    ## PHASE 3: ready gnosis_vpn-client
+
+    # 3a: start client
+
+
 
     sleep 5
     exit 0
