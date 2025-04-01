@@ -21,6 +21,7 @@ docker-run:
         --publish 51821:51820/udp \
         --cap-add=NET_ADMIN \
         --add-host=host.docker.internal:host-gateway \
+        --sysctl net.ipv4.conf.all.src_valid_mark=1 \
         --name gnosis_vpn-server gnosis_vpn-server
 
 # stop docker container
