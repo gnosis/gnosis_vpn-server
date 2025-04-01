@@ -106,8 +106,8 @@ system-test: submodules docker-build
 
     # 2a: start server
     SERVER_PRIVATE_KEY=$(wg genkey)
-    echo "[PHASE2] Starting gnosis_vpn-server with public key: #(echo $SERVER_PRIVATE_KEY | wg pubkey)"
-    SERVER_PRIVATE_KEY=$SERVER_PRIVATE_KEY just docker-run
+    echo "[PHASE2] Starting gnosis_vpn-server with public key: $(echo $SERVER_PRIVATE_KEY | wg pubkey)"
+    PRIVATE_KEY=$SERVER_PRIVATE_KEY just docker-run
 
     # 2b: wait for server
     EXPECTED_PATTERN="Rocket has launched"
