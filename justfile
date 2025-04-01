@@ -142,6 +142,7 @@ system-test: submodules docker-build
 
     # 3a: start client
     pushd modules/gnosis_vpn-client
+    echo "[PHASE3] Starting gnosis_vpn-client with public key: #(echo $CLIENT_PRIVATE_KEY | wg pubkey)"
     just docker-build
     ADDRESS="${CLIENT_WG_IP}/32" DESTINATION_PEER_ID="${PEER_ID_LOCAL6}" API_TOKEN="${API_TOKEN_LOCAL1}" \
       API_PORT="${API_PORT_LOCAL1}" PRIVATE_KEY="${CLIENT_PRIVATE_KEY}" \
@@ -149,6 +150,24 @@ system-test: submodules docker-build
     popd
 
     # 3b: wait for client to connect
+    EXPECTED_PATTERN="VPN CONNECTION ESTABLISHED"
+    TIMEOUT_S=300
+    ENDTIME=$(($(date +%s) + TIMEOUT_S))
+    echo "[PHASE3] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
+
+    while true; do
+        if docker logs gnosis_vpn-client | grep -q "$EXPECTED_PATTERN"; then
+            echo "[PHASE3] ${EXPECTED_PATTERN}"
+            break
+        fi
+        if [ $(date +%s) -gt $ENDTIME ]; then
+            echo "[PHASE3] Timeout reached"
+            docker logs --tail 20 gnosis_vpn-client
+            exit 3
+        fi
+        sleep 1
+    done
+
 
     sleep 6000
     exit 0
