@@ -56,6 +56,8 @@ system-test: submodules docker-build
 
         echo "[CLEANUP] Shutting down client container"
         cd modules/gnosis_vpn-client && just docker-stop || true
+
+        echo "[CLEANUP] Done"
     }
 
     trap cleanup SIGINT SIGTERM EXIT
@@ -147,5 +149,5 @@ system-test: submodules docker-build
 
     # 3b: wait for client to connect
 
-    sleep 5
+    sleep 6000
     exit 0
