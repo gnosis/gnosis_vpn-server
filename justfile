@@ -76,7 +76,7 @@ system-test: submodules docker-build
     EXPECTED_PATTERN="All nodes ready"
     TIMEOUT_S=300
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
-    echo "[PHASE1] Waiting for log pattern: '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
+    echo "[PHASE1] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
     while true; do
         if grep -q "$EXPECTED_PATTERN" cluster.log; then
@@ -113,7 +113,7 @@ system-test: submodules docker-build
     EXPECTED_PATTERN="Rocket has launched"
     TIMEOUT_S=300
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
-    echo "[PHASE2] Waiting for log pattern: '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
+    echo "[PHASE2] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
     while true; do
         if docker logs gnosis_vpn-server | grep -q "$EXPECTED_PATTERN"; then
