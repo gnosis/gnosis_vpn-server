@@ -81,7 +81,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
     let interface_address = ip_addr_stdout
         .split('\n')
         .find(|line| line.contains("inet "))
-        .and_then(|line| line.split(' ').nth(1))
+        .and_then(|line| line.trim().split(' ').nth(1))
         .ok_or_else(|| {
             tracing::error!(?interface, stdout = ?ip_addr_stdout, "Failed to parse address");
             Error::NoAddress
