@@ -4,6 +4,7 @@ use std::process::Command;
 
 #[derive(Debug, Serialize)]
 pub enum Error {
+    Generic(String),
     IO(String),
 }
 
@@ -32,6 +33,10 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
         );
     }
 
+    if output.status.success() {
+        return Err(Error::Generic(format!("wg set peer failed: {:?}", output)));
+    }
+
     Ok(())
 }
 
@@ -56,6 +61,10 @@ pub fn remove_peer(interface: &str, public_key: &str) -> Result<(), Error> {
             interface,
             "wg set peer"
         )
+    }
+
+    if output.status.success() {
+        return Err(Error::Generic(format!("wg remove peer failed: {:?}", output)));
     }
 
     Ok(())
