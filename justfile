@@ -142,7 +142,7 @@ system-test: submodules docker-build
 
     # 3a: start client
     pushd modules/gnosis_vpn-client
-    echo "[PHASE3] Starting gnosis_vpn-client with public key: #(echo $CLIENT_PRIVATE_KEY | wg pubkey)"
+    echo "[PHASE3] Starting gnosis_vpn-client with public key: $(echo $CLIENT_PRIVATE_KEY | wg pubkey)"
     just docker-build
     ADDRESS="${CLIENT_WG_IP}/32" DESTINATION_PEER_ID="${PEER_ID_LOCAL6}" API_TOKEN="${API_TOKEN_LOCAL1}" \
       API_PORT="${API_PORT_LOCAL1}" PRIVATE_KEY="${CLIENT_PRIVATE_KEY}" \
