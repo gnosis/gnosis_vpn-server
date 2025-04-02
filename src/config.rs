@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 
 use crate::ip_range::IpRange;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
+    // wireguard interface server address
+    pub server_address: Ipv4Addr,
     // this effectively determines the number of clients that are concurrently allowed to connect
     pub allowed_client_ips: IpRange,
     // web server endpoint

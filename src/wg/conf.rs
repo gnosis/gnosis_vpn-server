@@ -1,6 +1,7 @@
 use serde::Serialize;
 use std::fs::File;
 use std::io::Write;
+use std::net::Ipv4Addr;
 use std::process::Command;
 
 use crate::ops::Ops;
@@ -23,7 +24,7 @@ pub enum Error {
     IO(String),
 }
 
-pub fn save_file(ops: &Ops) -> Result<(), Error> {
+pub fn save_file(ops: &Ops, address: &Ipv4Addr) -> Result<(), Error> {
     let interface = match ops.interface() {
         Some(interface) => interface,
         None => return Err(Error::NoInterface),
@@ -47,11 +48,25 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
         )
     }
 
+    // Prepend with maintainer information
     let prepend_str = format!("# Maintained by {}\n\n", env!("CARGO_PKG_NAME"));
     let prepend = prepend_str.as_bytes();
-    let mut content = Vec::with_capacity(prepend.len() + output.stdout.len());
+
+    let stdout_str = String::from_utf8_lossy(&output.stdout);
+    let mut lines: Vec<String> = stdout_str.lines().map(String::from).collect();
+
+    // Add interface address into the config
+    if let Some(index) = lines.iter().position(|line| line == "[Interface]") {
+        let line_addr = format!("Address = {}/32", address);
+        lines.insert(index + 1, line_addr);
+    }
+
+    let modified_output = lines.join("\n");
+    let modified_output_bytes = modified_output.as_bytes();
+
+    let mut content = Vec::with_capacity(prepend.len() + modified_output_bytes.len());
     content.extend_from_slice(prepend);
-    content.extend_from_slice(&output.stdout);
+    content.extend_from_slice(modified_output_bytes);
     let mut f = File::create(&ops.wg_interface_config).map_err(|err| Error::IO(err.to_string()))?;
     f.write_all(&content).map_err(|err| Error::IO(err.to_string()))?;
     Ok(())
