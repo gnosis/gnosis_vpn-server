@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
 
-use crate::api_error::ApiError;
+use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
 use crate::wg::conf;
 use crate::wg::set;
@@ -43,7 +43,7 @@ pub fn api(
     input: Json<Input>,
     sync_wg_interface: &State<bool>,
     ops: &State<Ops>,
-) -> Result<(Status, Json<Register>), Json<ApiError>> {
+) -> Result<(Status, Json<Register>), ApiError> {
     let rand = rand::rng();
     let res = run(ops, RunVariant::GenerateIP(rand), input.public_key.as_str());
 
@@ -61,10 +61,10 @@ pub fn api(
             Ok((Status::Created, Json(reg)))
         }
         Ok(reg) => Ok((Status::Ok, Json(reg))),
-        Err(Error::NoFreeIp) => Err(Json(ApiError::new(404, "Not Found", "No free IP available"))),
+        Err(Error::NoFreeIp) => Err(api_error::new(404, "Not Found", "No free IP available")),
         Err(err) => {
             tracing::error!(?err, "POST /register failed");
-            Err(Json(ApiError::internal_server_error()))
+            Err(api_error::internal_server_error())
         }
     }
 }

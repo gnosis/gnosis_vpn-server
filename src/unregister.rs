@@ -3,7 +3,7 @@ use rocket::serde::{json::Json, Deserialize};
 use rocket::State;
 use serde::Serialize;
 
-use crate::api_error::ApiError;
+use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
 use crate::wg::conf;
 use crate::wg::set;
@@ -26,7 +26,7 @@ pub struct Input {
 }
 
 #[post("/unregister", data = "<input>")]
-pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>) -> Result<Status, Json<ApiError>> {
+pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>) -> Result<Status, ApiError> {
     let res = run(ops, input.public_key.as_str());
 
     match res {
@@ -45,7 +45,7 @@ pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>
 
         Err(err) => {
             tracing::error!(?err, "POST /unregister failed");
-            Err(Json(ApiError::internal_server_error()))
+            Err(api_error::internal_server_error())
         }
     }
 }

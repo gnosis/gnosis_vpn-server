@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use crate::ip_range::IpRange;

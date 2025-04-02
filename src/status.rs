@@ -3,7 +3,7 @@ use rocket::State;
 use serde::Serialize;
 use std::net::Ipv4Addr;
 
-use crate::api_error::ApiError;
+use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
 use crate::wg::{peer::Peer, show};
 
@@ -59,23 +59,23 @@ pub enum Error {
 }
 
 #[get("/status/<public_key>")]
-pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSingle>, Json<ApiError>> {
+pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSingle>, ApiError> {
     let res = run_single(ops, &public_key);
 
     match res {
         Ok(status) => match status.state {
-            ConnectionState::NotRegistered => Err(Json(ApiError::new(404, "Not Found", "Client not registered"))),
+            ConnectionState::NotRegistered => Err(api_error::new(404, "Not Found", "Client not registered")),
             _ => Ok(Json(status)),
         },
         Err(err) => {
             tracing::error!(?err, "GET /status/<public_key> failed");
-            Err(Json(ApiError::internal_server_error()))
+            Err(api_error::internal_server_error())
         }
     }
 }
 
 #[get("/status")]
-pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
+pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, ApiError> {
     let res = run(ops);
 
     match res {
@@ -85,7 +85,7 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, Json<ApiError>> {
         })),
         Err(err) => {
             tracing::error!(?err, "GET /status failed");
-            Err(Json(ApiError::internal_server_error()))
+            Err(api_error::internal_server_error())
         }
     }
 }
