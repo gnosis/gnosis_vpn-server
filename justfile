@@ -168,6 +168,9 @@ system-test: submodules docker-build
         sleep 1
     done
 
+    # 3c: run ping test
+    echo "[PHASE3] Checking ping to server"
+    docker exec gnosis_vpn-client ping -c1 10.129.0.1
 
-    sleep 6000
+    echo "[SUCCESS] System test completed successfully"
     exit 0
