@@ -34,7 +34,7 @@ jobs:
       - name: Tests
         run: nix build .#gvpn-test
       - name: System Test
-        run: just system-test
+        run: nix develop --command just system-test
   build-binaries:
     strategy:
       matrix:
