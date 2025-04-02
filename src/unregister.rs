@@ -61,7 +61,7 @@ pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
     let dump = show::dump(interface).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     let peer = res_peer.ok_or(Error::PeerNotFound)?;
-    set::remove_peer(interface, &peer).map_err(Error::WgSet)?;
+    set::remove_peer(interface, peer).map_err(Error::WgSet)?;
     Ok(Unregister {
         public_key: public_key.to_string(),
     })
