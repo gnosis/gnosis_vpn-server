@@ -44,6 +44,8 @@ pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>
             Ok(Status::NoContent)
         }
 
+        Err(Error::PeerNotFound) => Err(api_error::new(404, "Not Found", "Peer not found")),
+
         Err(err) => {
             tracing::error!(?err, "POST /unregister failed");
             Err(api_error::internal_server_error())
