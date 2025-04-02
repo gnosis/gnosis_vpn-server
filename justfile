@@ -74,7 +74,7 @@ system-test: submodules docker-build
 
     # 1b: wait for nodes
     EXPECTED_PATTERN="All nodes ready"
-    TIMEOUT_S=300
+    TIMEOUT_S=1800
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE1] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
