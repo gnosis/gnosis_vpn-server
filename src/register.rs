@@ -7,9 +7,7 @@ use std::net::Ipv4Addr;
 
 use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
-use crate::wg::conf;
-use crate::wg::set;
-use crate::wg::show;
+use crate::wg::{conf, set, show};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Register {
