@@ -84,7 +84,7 @@ system-setup mode='keep-running': submodules docker-build
     # print progress report each minute
     ONGOING_INTERVAL_S=60
     START_TIME=$(date +%s)
-
+    NEXT_REPORT_TIME=$((START_TIME + ONGOING_INTERVAL_S))
 
     while true; do
         if grep -q "$EXPECTED_PATTERN" cluster.log; then
@@ -96,9 +96,10 @@ system-setup mode='keep-running': submodules docker-build
             tail --lines 50 cluster.log
             exit 1
         fi
-        if [ $(($(date +%s) % $ONGOING_INTERVAL_S)) -eq 0 ]; then
+        if [ $(date +%s) -gt $NEXT_REPORT_TIME ]; then
+            NEXT_REPORT_TIME=$((NEXT_REPORT_TIME + ONGOING_INTERVAL_S))
             ELAPSED_TIME=$(($(date +%s) - $START_TIME))
-            echo "[PHASE1] Peek cluster log after $((ELAPSED_TIME)) seconds"
+            echo "[PHASE1] Peek cluster log after $((ELAPSED_TIME / 60)) minutes"
             tail --lines 5 cluster.log
         fi
         sleep 1
