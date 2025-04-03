@@ -177,7 +177,7 @@ system-setup mode='keep-running': submodules docker-build
     echo "[PHASE3] Checking ping from server to client"
     docker exec gnosis_vpn-server ping -c1 $CLIENT_WG_IP
 
-    if [ "$mode" = "ci-system-test" ]; then
+    if [ "{{ mode }}" = "ci-system-test" ]; then
         echo "[SUCCESS] System test completed successfully"
         exit 0
     else
