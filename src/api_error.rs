@@ -1,3 +1,5 @@
+use rocket::http::Status;
+use rocket::serde::json::Json;
 use serde::Serialize;
 
 /*
@@ -17,28 +19,34 @@ struct InternalApiError {
 }
 
 #[derive(Serialize)]
-pub struct ApiError {
+pub struct JsonApiError {
     error: InternalApiError,
 }
 
-impl ApiError {
-    pub fn new(code: u16, reason: &str, description: &str) -> Self {
-        Self {
+pub type ApiError = (Status, Json<JsonApiError>);
+
+pub fn new(code: u16, reason: &str, description: &str) -> ApiError {
+    (
+        Status::from_code(code).unwrap_or(Status::InternalServerError),
+        Json(JsonApiError {
             error: InternalApiError {
                 code,
                 reason: reason.to_string(),
                 description: description.to_string(),
             },
-        }
-    }
+        }),
+    )
+}
 
-    pub fn internal_server_error() -> Self {
-        Self {
+pub fn internal_server_error() -> ApiError {
+    (
+        Status::InternalServerError,
+        Json(JsonApiError {
             error: InternalApiError {
                 code: 500,
                 reason: "Internal Server Error".to_string(),
                 description: "The server encountered an internal error while processing this request.".to_string(),
             },
-        }
-    }
+        }),
+    )
 }

@@ -4,12 +4,10 @@ use rocket::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
-use std::process::Command;
 
-use crate::api_error::ApiError;
+use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
-use crate::wg::conf;
-use crate::wg::show;
+use crate::wg::{conf, set, show};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Register {
@@ -23,8 +21,8 @@ pub enum Error {
     NoInterface,
     NoFreeIp,
     IpAlreadyTaken,
-    Generic(String),
     WgShow(show::Error),
+    WgSet(set::Error),
 }
 
 #[derive(Deserialize)]
@@ -43,7 +41,7 @@ pub fn api(
     input: Json<Input>,
     sync_wg_interface: &State<bool>,
     ops: &State<Ops>,
-) -> Result<(Status, Json<Register>), Json<ApiError>> {
+) -> Result<(Status, Json<Register>), ApiError> {
     let rand = rand::rng();
     let res = run(ops, RunVariant::GenerateIP(rand), input.public_key.as_str());
 
@@ -61,10 +59,10 @@ pub fn api(
             Ok((Status::Created, Json(reg)))
         }
         Ok(reg) => Ok((Status::Ok, Json(reg))),
-        Err(Error::NoFreeIp) => Err(Json(ApiError::new(404, "Not Found", "No free IP available"))),
+        Err(Error::NoFreeIp) => Err(api_error::new(404, "Not Found", "No free IP available")),
         Err(err) => {
             tracing::error!(?err, "POST /register failed");
-            Err(Json(ApiError::internal_server_error()))
+            Err(api_error::internal_server_error())
         }
     }
 }
@@ -101,41 +99,10 @@ pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register,
         }
     };
 
-    let res_output = Command::new("wg")
-        .arg("set")
-        .arg(interface)
-        .arg("peer")
-        .arg(public_key)
-        .arg("allowed-ips")
-        .arg(format!("{}/32", ip))
-        .output();
-
-    let output = match res_output {
-        Ok(output) => output,
-        Err(err) => {
-            return Err(Error::Generic(format!(
-                "wg set peer {} allowed-ips {}/32 failed: {}",
-                public_key, ip, err
-            )));
-        }
-    };
-
-    if !output.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
-            interface,
-            ?ip,
-            "wg set peer"
-        );
-    }
-
-    if output.status.success() {
-        Ok(Register {
-            public_key: public_key.to_string(),
-            ip,
-            newly_registered: true,
-        })
-    } else {
-        Err(Error::Generic(format!("wg add peer failed: {:?}", output)))
-    }
+    set::add_peer(interface, public_key, &ip).map_err(Error::WgSet)?;
+    Ok(Register {
+        public_key: public_key.to_string(),
+        ip,
+        newly_registered: true,
+    })
 }

@@ -29,6 +29,8 @@ craneLib.devShell {
     jq
     which
     yq-go
+    just
+    wireguard-tools
 
     # development helper
     cargo-outdated

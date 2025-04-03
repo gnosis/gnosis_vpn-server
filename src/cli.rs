@@ -28,7 +28,7 @@ pub enum Command {
         /// Periodically run cleanup job, interval is taken from configuration file
         #[arg(long)]
         periodically_run_cleanup: bool,
-        /// Restore wg interface state from configuration file and persist changes
+        /// Manage wg interface by using wg-quick up/down commands
         #[arg(long)]
         sync_wg_interface: bool,
     },

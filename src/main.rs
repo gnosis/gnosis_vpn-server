@@ -13,6 +13,7 @@ use tokio::time;
 use crate::config::Config;
 use crate::register::RunVariant;
 use crate::wg::conf;
+use crate::wg::quick;
 
 mod api_error;
 mod cli;
@@ -58,10 +59,10 @@ async fn main() -> Result<()> {
             );
 
             if sync_wg_interface {
-                match conf::set_interface(&ops) {
+                match quick::up(&ops) {
                     Ok(_) => (),
                     Err(err) => {
-                        tracing::error!(?err, "Restore interface state failed");
+                        tracing::error!(?err, "Bringing interface up failed");
                         process::exit(1);
                     }
                 }
@@ -85,10 +86,10 @@ async fn main() -> Result<()> {
             rocket.await?;
 
             if sync_wg_interface {
-                match conf::remove_interface(&ops) {
+                match quick::down(&ops) {
                     Ok(_) => (),
                     Err(err) => {
-                        tracing::error!(?err, "Persisting interface state to config failed");
+                        tracing::error!(?err, "Taking interface down failed");
                         process::exit(1);
                     }
                 }
