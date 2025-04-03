@@ -42,8 +42,11 @@ start-cluster:
     cd modules/hoprnet
     nix develop .#cluster --command make localcluster-expose1
 
-# run full system test
-system-test: submodules docker-build
+[doc('''Run full system setup with ping tests:
+This will start a local cluster, start the server and client, and run a ping test.
+   'mode' can be either 'keep-running' or 'ci-system-test', with 'keep-running' being the default
+''')]
+system-setup mode='keep-running': submodules docker-build
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
 
@@ -74,7 +77,7 @@ system-test: submodules docker-build
 
     # 1b: wait for nodes
     EXPECTED_PATTERN="All nodes ready"
-    TIMEOUT_S=1800
+    TIMEOUT_S=3600
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE1] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
@@ -85,7 +88,7 @@ system-test: submodules docker-build
         fi
         if [ $(date +%s) -gt $ENDTIME ]; then
             echo "[PHASE1] Timeout reached"
-            tail --lines 20 cluster.log
+            tail --lines 50 cluster.log
             exit 1
         fi
         sleep 1
@@ -169,8 +172,17 @@ system-test: submodules docker-build
     done
 
     # 3c: run ping test
-    echo "[PHASE3] Checking ping to server"
+    echo "[PHASE3] Checking ping from client to server"
     docker exec gnosis_vpn-client ping -c1 10.129.0.1
+    echo "[PHASE3] Checking ping from server to client"
+    docker exec gnosis_vpn-server ping -c1 $CLIENT_WG_IP
 
-    echo "[SUCCESS] System test completed successfully"
-    exit 0
+    if [ "$mode" = "ci-system-test" ]; then
+        echo "[SUCCESS] System test completed successfully"
+        exit 0
+    else
+        echo "[PHASE3] System setup complete, keeping components running"
+        echo "[PHASE3] Press Ctrl+C to stop the cluster and containers"
+        wait $CLUSTER_PID
+        exit 0
+    fi
