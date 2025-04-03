@@ -81,6 +81,11 @@ system-setup mode='keep-running': submodules docker-build
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE1] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
+    # print progress report each minute
+    ONGOING_INTERVAL_S=60
+    START_TIME=$(date +%s)
+
+
     while true; do
         if grep -q "$EXPECTED_PATTERN" cluster.log; then
             echo "[PHASE1] ${EXPECTED_PATTERN}"
@@ -90,6 +95,11 @@ system-setup mode='keep-running': submodules docker-build
             echo "[PHASE1] Timeout reached"
             tail --lines 50 cluster.log
             exit 1
+        fi
+        if [ $(($(date +%s) % $ONGOING_INTERVAL_S)) -eq 0 ]; then
+            ELAPSED_TIME=$(($(date +%s) - $START_TIME))
+            echo "[PHASE1] Peek cluster log after $((ELAPSED_TIME)) seconds"
+            tail --lines 5 cluster.log
         fi
         sleep 1
     done
