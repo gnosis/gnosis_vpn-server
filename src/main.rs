@@ -11,6 +11,8 @@ use std::process;
 use tokio::time;
 
 use crate::config::Config;
+use crate::remove::{RemoveDisconnected, RemoveExpired};
+
 use crate::register::RunVariant;
 use crate::wg::conf;
 use crate::wg::quick;
@@ -273,12 +275,13 @@ async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
         // waits ops.client_cleanup_interval
         cron.tick().await;
         tracing::info!(
-            "Running clients cleanup job with {} potential targets from last run",
+            "Running clients cleanup job with {} potential never connected targets from last run",
             once_not_connected.len()
         );
-        match remove::cron(ops, &once_not_connected) {
-            Ok(newly_not_connected) => {
-                once_not_connected = newly_not_connected;
+        match remove::previously_disconnected(ops, &once_not_connected) {
+            Ok(RemoveDisconnected { newly_found, removed }) => {
+                tracing::info!("Removed {} clients that were never connected", removed.len());
+                once_not_connected = newly_found;
                 if sync_wg_interface {
                     match conf::save_file(ops) {
                         Ok(_) => (),
@@ -291,6 +294,14 @@ async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
             Err(err) => {
                 tracing::error!("Error during clients cleanup: {:?}", err);
                 once_not_connected = Vec::new();
+            }
+        }
+        match remove::expired(ops, &None) {
+            Ok(RemoveExpired { total, .. }) => {
+                tracing::info!("Removed {} expired clients", total);
+            }
+            Err(err) => {
+                tracing::error!("Error during expired clients cleanup: {:?}", err);
             }
         }
     }
