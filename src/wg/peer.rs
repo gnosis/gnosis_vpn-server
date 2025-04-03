@@ -17,8 +17,8 @@ pub struct Peer {
 impl Peer {
     pub fn timed_out(&self, timeout: &Duration) -> Result<bool, SystemTimeError> {
         let now = SystemTime::now().duration_since(UNIX_EPOCH)?;
-        let dur = Duration::from_micros(self.latest_handshake);
-        let valid = dur + *timeout > now;
+        let handshaked = Duration::from_secs(self.latest_handshake);
+        let valid = handshaked + *timeout > now;
         Ok(!valid)
     }
 

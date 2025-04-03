@@ -8,14 +8,20 @@ use crate::wg::show;
 
 #[derive(Debug, Serialize)]
 pub struct RemoveExpired {
-    expired_public_keys: Vec<String>,
-    total: u32,
+    pub expired_public_keys: Vec<String>,
+    pub total: u32,
 }
 
 #[derive(Debug, Serialize)]
 pub struct RemoveNeverConnected {
-    never_connected_public_keys: Vec<String>,
-    total: u32,
+    pub never_connected_public_keys: Vec<String>,
+    pub total: u32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RemoveDisconnected {
+    pub newly_found: Vec<String>,
+    pub removed: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -26,9 +32,7 @@ pub enum Error {
     SystemTime(String),
 }
 
-pub fn cron(ops: &Ops, once_not_connected: &[String]) -> Result<Vec<String>, Error> {
-    let _ = expired(ops, &None)?;
-
+pub fn previously_disconnected(ops: &Ops, once_not_connected: &[String]) -> Result<RemoveDisconnected, Error> {
     // determine never connected
     let interface = match ops.interface() {
         Some(interface) => interface,
@@ -45,13 +49,17 @@ pub fn cron(ops: &Ops, once_not_connected: &[String]) -> Result<Vec<String>, Err
     let newly_found: HashSet<&String> = public_keys.into_iter().collect();
     let existing: HashSet<&String> = once_not_connected.iter().collect();
 
+    // restrict to only removing peers that were not connected during last run
     let removable: HashSet<&String> = existing.intersection(&newly_found).copied().collect();
     for key in &removable {
         let _ = unregister::run(ops, key).map_err(Error::Unregister)?;
     }
 
     let remaining: Vec<String> = newly_found.difference(&removable).map(|&key| key.clone()).collect();
-    Ok(remaining)
+    Ok(RemoveDisconnected {
+        newly_found: remaining,
+        removed: removable.into_iter().map(|s| s.to_string()).collect(),
+    })
 }
 
 pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
