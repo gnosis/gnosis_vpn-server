@@ -8,7 +8,7 @@ use crate::wg::peer::Peer;
 #[allow(dead_code)]
 pub struct Dump {
     private_key: String,
-    public_key: String,
+    pub public_key: String,
     listen_port: u16,
     fwmark: String,
     pub peers: Vec<Peer>,

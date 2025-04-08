@@ -14,6 +14,7 @@ pub struct Register {
     public_key: String,
     ip: Ipv4Addr,
     newly_registered: bool,
+    server_public_key: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -79,6 +80,7 @@ pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register,
             public_key: peer.public_key.clone(),
             ip: peer.ip,
             newly_registered: false,
+            server_public_key: dump.public_key.clone(),
         });
     }
 
@@ -104,5 +106,6 @@ pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register,
         public_key: public_key.to_string(),
         ip,
         newly_registered: true,
+        server_public_key: dump.public_key.clone(),
     })
 }
