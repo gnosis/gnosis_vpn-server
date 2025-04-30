@@ -39,6 +39,10 @@
 //! require dependencies that don't build there, so tests need newer Rust version (they are run on
 //! stable).
 //!
+//! Note that this ancient version of rustc no longer compiles current versions of `libc`. If you
+//! want to use rustc this old, you need to force your dependency resolution to pick old enough
+//! version of `libc` (`0.2.156` was found to work, but newer ones may too).
+//!
 //! # Portability
 //!
 //! This crate includes a limited support for Windows, based on `signal`/`raise` in the CRT.
@@ -66,8 +70,8 @@ use std::collections::hash_map::Entry;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Error;
 use std::mem;
-#[cfg(not(windows))]
 use std::ptr;
+use std::sync::atomic::{AtomicPtr, Ordering};
 // Once::new is now a const-fn. But it is not stable in all the rustc versions we want to support
 // yet.
 #[allow(deprecated)]
@@ -158,16 +162,29 @@ impl Slot {
     fn new(signal: libc::c_int) -> Result<Self, Error> {
         // C data structure, expected to be zeroed out.
         let mut new: libc::sigaction = unsafe { mem::zeroed() };
-        #[cfg(not(target_os = "aix"))]
-        { new.sa_sigaction = handler as usize; }
-        #[cfg(target_os = "aix")]
-        { new.sa_union.__su_sigaction = handler; }
+
+        // Note: AIX fixed their naming in libc 0.2.171.
+        //
+        // However, if we mandate that _for everyone_, other systems fail to compile on old Rust
+        // versions (eg. 1.26.0), because they are no longer able to compile this new libc.
+        //
+        // There doesn't seem to be a way to make Cargo force the dependency for only one target
+        // (it doesn't compile the ones it doesn't need, but it stills considers the other targets
+        // for version resolution).
+        //
+        // Therefore, we let the user have freedom - if they want AIX, they can upgrade to new
+        // enough libc. If they want ancient rustc, they can force older versions of libc.
+        //
+        // See #169.
+
+        new.sa_sigaction = handler as usize; // If it doesn't compile on AIX, upgrade the libc dependency
+
         // Android is broken and uses different int types than the rest (and different depending on
         // the pointer width). This converts the flags to the proper type no matter what it is on
         // the given platform.
         #[cfg(target_os = "nto")]
         let flags = 0;
-        // SA_RESTART is supported by qnx https://www.qnx.com/support/knowledgebase.html?id=50130000000SmiD 
+        // SA_RESTART is supported by qnx https://www.qnx.com/support/knowledgebase.html?id=50130000000SmiD
         #[cfg(not(target_os = "nto"))]
         let flags = libc::SA_RESTART;
         #[allow(unused_assignments)]
@@ -239,10 +256,7 @@ impl Prev {
 
     #[cfg(not(windows))]
     unsafe fn execute(&self, sig: c_int, info: *mut siginfo_t, data: *mut c_void) {
-        #[cfg(not(target_os = "aix"))]
         let fptr = self.info.sa_sigaction;
-        #[cfg(target_os = "aix")]
-        let fptr = self.info.sa_union.__su_sigaction as usize;
         if fptr != 0 && fptr != libc::SIG_DFL && fptr != libc::SIG_IGN {
             // Android is broken and uses different int types than the rest (and different
             // depending on the pointer width). This converts the flags to the proper type no
@@ -282,23 +296,30 @@ struct GlobalData {
     race_fallback: HalfLock<Option<Prev>>,
 }
 
-static mut GLOBAL_DATA: Option<GlobalData> = None;
+static GLOBAL_DATA: AtomicPtr<GlobalData> = AtomicPtr::new(ptr::null_mut());
 #[allow(deprecated)]
 static GLOBAL_INIT: Once = ONCE_INIT;
 
 impl GlobalData {
     fn get() -> &'static Self {
-        unsafe { GLOBAL_DATA.as_ref().unwrap() }
+        let data = GLOBAL_DATA.load(Ordering::Acquire);
+        // # Safety
+        //
+        // * The data actually does live forever - created by Box::into_raw.
+        // * It is _never_ modified (apart for interior mutability, but that one is fine).
+        unsafe { data.as_ref().expect("We shall be set up already") }
     }
     fn ensure() -> &'static Self {
-        GLOBAL_INIT.call_once(|| unsafe {
-            GLOBAL_DATA = Some(GlobalData {
+        GLOBAL_INIT.call_once(|| {
+            let data = Box::into_raw(Box::new(GlobalData {
                 data: HalfLock::new(SignalData {
                     signals: HashMap::new(),
                     next_id: 1,
                 }),
                 race_fallback: HalfLock::new(None),
-            });
+            }));
+            let old = GLOBAL_DATA.swap(data, Ordering::Release);
+            assert!(old.is_null());
         });
         Self::get()
     }

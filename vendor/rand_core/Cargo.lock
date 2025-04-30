@@ -52,11 +52,10 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.9.2"
+version = "0.9.3"
 dependencies = [
  "getrandom",
  "serde",
- "zerocopy",
 ]
 
 [[package]]
@@ -176,24 +175,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3268f3d866458b787f390cf61f4bbb563b922d091359f9608842999eaee3943c"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "zerocopy"
-version = "0.8.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a367f292d93d4eab890745e75a778da40909cab4d6ff8173693812f79c4a2468"
-dependencies = [
- "zerocopy-derive",
-]
-
-[[package]]
-name = "zerocopy-derive"
-version = "0.8.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3931cb58c62c13adec22e38686b559c86a30565e16ad6e8510a337cedc611e1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]

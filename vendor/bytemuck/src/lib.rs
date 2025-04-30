@@ -82,12 +82,19 @@
 //!   Box and Vec.
 //! * `zeroable_maybe_uninit` and `zeroable_atomics`: Provide more [`Zeroable`]
 //!   impls.
+//! * `pod_saturating`: Provide more [`Pod`] and [`Zeroable`] impls.
 //! * `wasm_simd` and `aarch64_simd`: Support more SIMD types.
 //! * `min_const_generics`: Provides appropriate impls for arrays of all lengths
 //!   instead of just for a select list of array lengths.
 //! * `must_cast`: Provides the `must_` functions, which will compile error if
 //!   the requested cast can't be statically verified.
 //! * `const_zeroed`: Provides a const version of the `zeroed` function.
+//!
+//! ## Related Crates
+//!
+//! - [`pack1`](https://docs.rs/pack1), which contains `bytemuck`-compatible
+//!   packed little-endian, big-endian and native-endian integer and floating
+//!   point number types.
 
 #[cfg(all(target_arch = "aarch64", feature = "aarch64_simd"))]
 use core::arch::aarch64;
@@ -259,6 +266,10 @@ impl core::fmt::Display for PodCastError {
 #[cfg(feature = "extern_crate_std")]
 #[cfg_attr(feature = "nightly_docs", doc(cfg(feature = "extern_crate_std")))]
 impl std::error::Error for PodCastError {}
+
+// Rust 1.81+
+#[cfg(all(feature = "impl_core_error", not(feature = "extern_crate_std")))]
+impl core::error::Error for PodCastError {}
 
 /// Re-interprets `&T` as `&[u8]`.
 ///
