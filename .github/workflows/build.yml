@@ -25,8 +25,7 @@ jobs:
         with:
           name: gnosis-vpn-server
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-          extaPullNames:
-            - hoprnet
+          extaPullNames: hoprnet
         env:
           USER: runner
       - name: Build
