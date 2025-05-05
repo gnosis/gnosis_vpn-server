@@ -40,7 +40,7 @@ submodules:
 start-cluster:
     #!/usr/bin/env bash
     cd modules/hoprnet
-    nix develop .#cluster --command make localcluster-expose1
+    nix develop .#cluster --command make localcluster-exposed
 
 [doc('''Run full system setup with ping tests:
 This will start a local cluster, start the server and client, and run a ping test.
