@@ -20,17 +20,12 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Nix
         uses: cachix/install-nix-action@v30
-      - name: Use Hoprnet Nix Cache
-        uses: cachix/cachix-action@v15
-        with:
-          name: hoprnet
-        env:
-          USER: runner
       - name: Use Nix Cache
         uses: cachix/cachix-action@v15
         with:
           name: gnosis-vpn-server
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          extaPullNames: "hoprnet"
         env:
           USER: runner
       - name: Build
