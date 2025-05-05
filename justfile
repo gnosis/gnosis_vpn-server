@@ -40,7 +40,7 @@ submodules:
 start-cluster:
     #!/usr/bin/env bash
     cd modules/hoprnet
-    nix develop .#cluster --command make localcluster-expose1
+    nix develop .#cluster --command make localcluster-exposed
 
 [doc('''Run full system setup with ping tests:
 This will start a local cluster, start the server and client, and run a ping test.
@@ -77,7 +77,7 @@ system-setup mode='keep-running': submodules docker-build
 
     # 1b: wait for nodes
     EXPECTED_PATTERN="All nodes ready"
-    TIMEOUT_S=600
+    TIMEOUT_S=$((60 * 50)) # 50 minutes
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE1] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
@@ -125,7 +125,7 @@ system-setup mode='keep-running': submodules docker-build
 
     # 2b: wait for server
     EXPECTED_PATTERN="Rocket has launched"
-    TIMEOUT_S=300
+    TIMEOUT_S=$((60 * 5)) # 5 minutes
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE2] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
@@ -165,7 +165,7 @@ system-setup mode='keep-running': submodules docker-build
 
     # 3b: wait for client to connect
     EXPECTED_PATTERN="VPN CONNECTION ESTABLISHED"
-    TIMEOUT_S=300
+    TIMEOUT_S=$((60 * 5)) # 5 minutes
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE3] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 

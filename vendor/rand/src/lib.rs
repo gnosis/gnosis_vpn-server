@@ -59,6 +59,7 @@
     clippy::neg_cmp_op_on_partial_ord,
     clippy::nonminimal_bool
 )]
+#![deny(clippy::undocumented_unsafe_blocks)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -96,6 +97,9 @@ macro_rules! error { ($($x:tt)*) => (
     }
 ) }
 
+// Re-export rand_core itself
+pub use rand_core;
+
 // Re-exports from rand_core
 pub use rand_core::{CryptoRng, RngCore, SeedableRng, TryCryptoRng, TryRngCore};
 
@@ -114,7 +118,7 @@ pub use crate::rngs::thread::rng;
 ///
 /// Use [`rand::rng()`](rng()) instead.
 #[cfg(feature = "thread_rng")]
-#[deprecated(since = "0.9.0", note = "renamed to `rng`")]
+#[deprecated(since = "0.9.0", note = "Renamed to `rng`")]
 #[inline]
 pub fn thread_rng() -> crate::rngs::ThreadRng {
     rng()

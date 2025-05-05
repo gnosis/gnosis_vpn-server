@@ -25,12 +25,7 @@ jobs:
         with:
           name: gnosis-vpn-server
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-        env:
-          USER: runner
-      - name: Use Nix Cache hoprnet
-        uses: cachix/cachix-action@v15
-        with:
-          name: hoprnet
+          extaPullNames: "hoprnet"
         env:
           USER: runner
       - name: Build
