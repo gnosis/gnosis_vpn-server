@@ -77,7 +77,7 @@ system-setup mode='keep-running': submodules docker-build
 
     # 1b: wait for nodes
     EXPECTED_PATTERN="All nodes ready"
-    TIMEOUT_S=$((60 * 20)) # 20 minutes
+    TIMEOUT_S=$((60 * 50)) # 50 minutes
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
     echo "[PHASE1] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
