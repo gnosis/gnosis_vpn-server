@@ -78,13 +78,13 @@ jobs:
         run: |
           base_version=$(grep -E '^version\s*=' Cargo.toml | awk -F\" '{print $2}')
           if [[ ${{ inputs.version_type }} == "commit" ]]; then
-            echo "binary_version=${base_version}-commit.$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+            echo "binary_version=${base_version}-commit.$(git rev-parse --short HEAD)" | tee -a $GITHUB_OUTPUT
             echo "publish_type=workflow" | tee -a $GITHUB_OUTPUT
           elif [[ ${{ inputs.version_type }} == "pr" ]]; then
-            echo "binary_version=${base_version}-pr.${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "binary_version=${base_version}-pr.${{ github.event.pull_request.number }}" | tee -a $GITHUB_OUTPUT
             echo "publish_type=artifact-registry" | tee -a $GITHUB_OUTPUT
           elif [[ ${{ inputs.version_type }} == "release" ]]; then
-            echo "binary_version=${base_version}" >> $GITHUB_OUTPUT
+            echo "binary_version=${base_version}" | tee -a $GITHUB_OUTPUT
             echo "publish_type=github" | tee -a $GITHUB_OUTPUT
           else
             echo "Invalid version type"
@@ -99,13 +99,13 @@ jobs:
             mv binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}} binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}-${{ steps.version.outputs.binary_version }}
           fi
       - name: Setup GCP
-        if: steps.version.outputs.publish_type == 'artifact-registry' || steps.version.outputs.publish_type == 'github'
+        if: steps.version.outputs.publish_type != 'workflow'
         uses: hoprnet/hopr-workflows/actions/setup-gcp@master
         with:
           google-credentials: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
           install-sdk: "true"
       - name: Publish Artifact registry
-        if: steps.version.outputs.publish_type == 'artifact-registry' || steps.version.outputs.publish_type == 'github'
+        if: steps.version.outputs.publish_type != 'workflow'
         run: |
           gcloud artifacts generic upload --location=europe-west3 --repository="rust-binaries" --version=${{ steps.version.outputs.binary_version }} --package=gnosis_vpn --source=binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}
       - name: Upload ${{ steps.vars.outputs.architecture }} binaries
