@@ -73,9 +73,9 @@ jobs:
             The binaries for this PR can be downloaded from:
             ```
             mkdir ./binaries
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-aarch64-linux --destination=./binaries --local-filename=gnosis_vpn-server-aarch64-linux
+            gcloud artifacts files download --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-aarch64-linux --destination=./binaries --local-filename=gnosis_vpn-server-aarch64-linux
 
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-x86_64-linux --destination=./binaries --local-filename=gnosis_vpn-server-x86_64-linux
+            gcloud artifacts files download --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-x86_64-linux --destination=./binaries --local-filename=gnosis_vpn-server-x86_64-linux
 
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-armv7l-linux --destination=./binaries --local-filename=gnosis_vpn-server-armv7l-linux
+            gcloud artifacts files download --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-armv7l-linux --destination=./binaries --local-filename=gnosis_vpn-server-armv7l-linux
             ```
