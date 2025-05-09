@@ -46,7 +46,7 @@ jobs:
       - delete-artifacts
     uses: ./.github/workflows/build-binaries.yaml
     with:
-      branch: ${{ github.event.pull_request.head.ref }}
+      branch: ${{ github.sha }} # Use the commit SHA as the branch is deleted after the PR is merged
       runner: ${{ matrix.binary.runner }}
       architecture: ${{ matrix.binary.architecture }}
       version_type: "pr"
