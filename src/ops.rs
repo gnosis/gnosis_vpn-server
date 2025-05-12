@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::time::Duration;
-
+use crate::metrics::Metrics;
 use crate::config::Config;
 use crate::ip_range::IpRange;
 
@@ -14,6 +14,7 @@ pub struct Ops {
     pub wg_interface_config: PathBuf,
     pub client_handshake_timeout: Duration,
     pub client_cleanup_interval: Duration,
+    pub metrics: Metrics,
 }
 
 impl Ops {
@@ -42,6 +43,7 @@ impl From<Config> for Ops {
                 .client_cleanup_interval_s
                 .map(Duration::from_secs)
                 .unwrap_or(def_client_cleanup_interval),
+            metrics: Metrics::new(),
         }
     }
 }
