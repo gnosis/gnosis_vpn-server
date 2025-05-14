@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::time::Duration;
+
 use crate::config::Config;
 use crate::ip_range::IpRange;
 use crate::metrics::Metrics;

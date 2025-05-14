@@ -1,4 +1,4 @@
-use prometheus::{IntGauge, Registry, Encoder, TextEncoder};
+use prometheus::{Encoder, IntGauge, Registry, TextEncoder};
 use rocket::State;
 
 use crate::ops::Ops;
