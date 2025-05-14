@@ -85,6 +85,12 @@
               isCross = true;
             };
 
+          rust-builder-aarch64-darwin = import ./nix/rust-builder.nix {
+            inherit nixpkgs rust-overlay crane localSystem;
+            crossSystem = pkgs.lib.systems.examples.aarch64-darwin;
+            isCross = false; # Not cross-compiling, native build
+          };
+
           rust-builder-armv7l-linux = import
             ./nix/rust-builder.nix
             {
@@ -110,6 +116,11 @@
           gvpn-aarch64-linux = rust-builder-aarch64-linux.callPackage
             ./nix/rust-package.nix
             gvpnBuildArgs;
+
+          gvpn-aarch64-darwin = rust-builder-aarch64-darwin.callPackage
+            ./nix/rust-package.nix
+            gvpnBuildArgs;
+
           gvpn-armv7l-linux = rust-builder-armv7l-linux.callPackage
             ./nix/rust-package.nix
             gvpnBuildArgs;
@@ -190,7 +201,7 @@
           packages = {
             inherit gvpn gvpn-debug;
             inherit gvpn-test;
-            inherit gvpn-aarch64-linux gvpn-armv7l-linux gvpn-x86_64-linux;
+            inherit gvpn-aarch64-linux gvpn-armv7l-linux gvpn-x86_64-linux gvpn-aarch64-darwin;
 
             default = gvpn;
           };
@@ -200,6 +211,6 @@
           formatter = config.treefmt.build.wrapper;
         };
       # platforms which are supported as build environments
-      systems = [ "x86_64-linux" "aarch64-linux" ];
+      systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     };
 }

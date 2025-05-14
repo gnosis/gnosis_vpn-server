@@ -16,9 +16,7 @@ impl Metrics {
         let registry = Registry::default();
         registry.register(Box::new(registered_clients.clone())).unwrap();
 
-        Metrics {
-            registered_clients,
-        }
+        Metrics { registered_clients }
     }
 
     pub fn gather_metrics(&self) -> String {
