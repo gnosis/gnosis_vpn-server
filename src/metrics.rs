@@ -35,16 +35,20 @@ pub fn calculate_registered_clients(ops: &Ops) -> u32 {
         Some(interface) => interface,
         None => return 0,
     };
+    tracing::info!("Calculating registered clients for interface: {}", interface);
     let dump = match show::dump(interface) {
         Ok(dump) => dump,
-        Err(_) => return 0,
+        Err(_) => return 1000,
     };
+    tracing::info!("Dumped interface: {:?}", dump);
+    tracing::info!("Dumped peers: {:?}", dump.peers);
+    tracing::info!("Dumped peers len: {:?}", dump.peers.len());
     dump.peers.len() as u32
 }
 
 #[get("/")]
 pub fn metrics_endpoint(ops: &State<Ops>) -> (ContentType, String) {
     let registered_clients = calculate_registered_clients(ops);
-    ops.metrics.registered_clients.set(registered_clients as i64);
+    ops.metrics.registered_clients.set((registered_clients + 5) as i64);
     (ContentType::Plain, ops.metrics.gather_metrics())
 }
