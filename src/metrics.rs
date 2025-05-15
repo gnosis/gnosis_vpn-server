@@ -1,6 +1,6 @@
 use prometheus::{Encoder, IntGauge, Registry, TextEncoder};
-use rocket::State;
 use rocket::http::ContentType;
+use rocket::State;
 
 use crate::ops::Ops;
 use crate::wg::show;
