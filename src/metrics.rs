@@ -35,7 +35,7 @@ pub fn calculate_registered_clients(ops: &Ops) -> u32 {
     };
     let dump = match show::dump(interface) {
         Ok(dump) => dump,
-        Err(_) => return 1000,
+        Err(_) => return 0,
     };
     dump.peers.len() as u32
 }
