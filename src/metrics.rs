@@ -13,11 +13,8 @@ pub struct Metrics {
 impl Metrics {
     pub fn new() -> Self {
         // Use the global registry to register the metric
-        let registered_clients = register_int_gauge!(
-            "gnosisvpn_registered_clients",
-            "Number of registered clients"
-        )
-        .unwrap();
+        let registered_clients =
+            register_int_gauge!("gnosisvpn_registered_clients", "Number of registered clients").unwrap();
 
         Metrics { registered_clients }
     }
