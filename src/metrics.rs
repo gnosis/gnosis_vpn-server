@@ -1,7 +1,9 @@
 use prometheus::{Encoder, IntGauge, Registry, TextEncoder};
 use rocket::State;
+use rocket::http::ContentType;
 
 use crate::ops::Ops;
+use crate::wg::show;
 
 #[derive(Debug, Clone)]
 pub struct Metrics {
@@ -28,7 +30,21 @@ impl Metrics {
     }
 }
 
+pub fn calculate_registered_clients(ops: &Ops) -> u32 {
+    let interface = match ops.interface() {
+        Some(interface) => interface,
+        None => return 0,
+    };
+    let dump = match show::dump(interface) {
+        Ok(dump) => dump,
+        Err(_) => return 0,
+    };
+    dump.peers.len() as u32
+}
+
 #[get("/")]
-pub fn metrics_endpoint(ops: &State<Ops>) -> String {
-    ops.metrics.gather_metrics()
+pub fn metrics_endpoint(ops: &State<Ops>) -> (ContentType, String) {
+    let registered_clients = calculate_registered_clients(ops);
+    ops.metrics.registered_clients.set(registered_clients as i64);
+    (ContentType::Plain, ops.metrics.gather_metrics())
 }

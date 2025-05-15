@@ -102,7 +102,6 @@ pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register,
     };
 
     set::add_peer(interface, public_key, &ip).map_err(Error::WgSet)?;
-    ops.metrics.registered_clients.inc(); // Increment the registered clients metric
     Ok(Register {
         public_key: public_key.to_string(),
         ip,
