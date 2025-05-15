@@ -21,6 +21,7 @@ mod api_error;
 mod cli;
 mod config;
 mod ip_range;
+mod metrics;
 mod ops;
 mod register;
 mod remove;
@@ -78,6 +79,7 @@ async fn main() -> Result<()> {
                     "/api/v1/clients",
                     routes![register::api, unregister::api, status::api_single],
                 )
+                .mount("/metrics", routes![metrics::metrics_endpoint])
                 .mount("/api/v1", routes![status::api])
                 .launch();
 

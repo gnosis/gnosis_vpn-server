@@ -99,7 +99,7 @@ pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) ->
     for key in &public_keys {
         let _ = unregister::run(ops, key).map_err(Error::Unregister)?;
     }
-
+    ops.metrics.registered_clients.dec();
     Ok(RemoveExpired {
         expired_public_keys: public_keys.iter().map(|s| s.to_string()).collect(),
         total: public_keys.len() as u32,
