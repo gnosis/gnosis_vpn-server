@@ -1,4 +1,4 @@
-use prometheus::{register_int_gauge, Encoder, IntGauge, Registry, TextEncoder};
+use prometheus::{register_int_gauge, Encoder, IntGauge, TextEncoder};
 use rocket::http::ContentType;
 use rocket::State;
 
