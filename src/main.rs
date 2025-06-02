@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
     let content = fs::read_to_string(config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
     let ops = Ops::from(config);
-    let metrics = Metrics::create().context("failed initializing metrics");
+    let metrics = Metrics::create().context("failed initializing metrics")?;
 
     match args.command {
         Command::Serve {
