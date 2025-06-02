@@ -5,7 +5,6 @@ use std::time::Duration;
 
 use crate::config::Config;
 use crate::ip_range::IpRange;
-use crate::metrics::Metrics;
 
 #[derive(Debug, Clone)]
 pub struct Ops {
@@ -15,7 +14,6 @@ pub struct Ops {
     pub wg_interface_config: PathBuf,
     pub client_handshake_timeout: Duration,
     pub client_cleanup_interval: Duration,
-    pub metrics: Metrics,
 }
 
 impl Ops {
@@ -44,7 +42,6 @@ impl From<Config> for Ops {
                 .client_cleanup_interval_s
                 .map(Duration::from_secs)
                 .unwrap_or(def_client_cleanup_interval),
-            metrics: Metrics::new(),
         }
     }
 }

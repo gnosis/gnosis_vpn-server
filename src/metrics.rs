@@ -28,7 +28,7 @@ impl Metrics {
     }
 }
 
-pub fn calculate_registered_clients(ops: &Ops) -> u32 {
+pub fn calculate_registered_clients(ops: &Ops) -> i64 {
     let interface = match ops.interface() {
         Some(interface) => interface,
         None => return 0,
@@ -37,12 +37,12 @@ pub fn calculate_registered_clients(ops: &Ops) -> u32 {
         Ok(dump) => dump,
         Err(_) => return 0,
     };
-    dump.peers.len() as u32
+    dump.peers.len() as i64
 }
 
 #[get("/")]
-pub fn metrics_endpoint(ops: &State<Ops>) -> (ContentType, String) {
+pub fn metrics_endpoint(ops: &State<Ops>, metrics: &State<Metrics>) -> (ContentType, String) {
     let registered_clients = calculate_registered_clients(ops);
-    ops.metrics.registered_clients.set(registered_clients as i64);
-    (ContentType::Plain, ops.metrics.gather_metrics())
+    metrics.registered_clients.set(registered_clients);
+    (ContentType::Plain, metrics.gather_metrics())
 }

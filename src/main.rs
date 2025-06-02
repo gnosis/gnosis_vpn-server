@@ -4,6 +4,7 @@ extern crate rocket;
 use anyhow::{Context, Result};
 use cli::Command;
 use figment::providers::{Format, Toml};
+use metrics::Metrics;
 use ops::Ops;
 use rocket::figment::Figment;
 use std::fs;
@@ -37,6 +38,8 @@ async fn main() -> Result<()> {
     let content = fs::read_to_string(config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
     let ops = Ops::from(config);
+    // Instantiate Metrics and add it to Rocket's state
+    let metrics = Metrics::new();
 
     match args.command {
         Command::Serve {
@@ -74,6 +77,7 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let rocket = rocket::custom(figment)
                 .manage(ops.clone())
+                .manage(metrics.clone())
                 .manage(sync_wg_interface)
                 .mount(
                     "/api/v1/clients",
