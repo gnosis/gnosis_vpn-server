@@ -1,13 +1,17 @@
-use serde::Serialize;
+use thiserror::Error;
+
+use std::io::Error as IOError;
 use std::net::Ipv4Addr;
 use std::process::Command;
 
 use crate::wg::peer::Peer;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Generic error: {0}")]
     Generic(String),
-    IO(String),
+    #[error("IO error: {0}")]
+    IO(#[from] IOError),
 }
 
 pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), Error> {
@@ -18,13 +22,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
         .arg(public_key)
         .arg("allowed-ips")
         .arg(format!("{}/32", ip))
-        .output()
-        .map_err(|err| {
-            Error::IO(format!(
-                "wg set {} peer {} allowed-ips {}/32 failed: {:?}",
-                interface, public_key, ip, err
-            ))
-        })?;
+        .output()?;
 
     if !output_set.stderr.is_empty() {
         tracing::warn!(
@@ -46,8 +44,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
         .arg(format!("{}/32", ip))
         .arg("dev")
         .arg(interface)
-        .output()
-        .map_err(|err| Error::IO(format!("ip -4 route add {}/32 dev {} failed: {:?}", ip, interface, err)))?;
+        .output()?;
 
     if !output_route.stderr.is_empty() {
         tracing::warn!(
@@ -72,13 +69,7 @@ pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), Error> {
         .arg("peer")
         .arg(peer.public_key.clone())
         .arg("remove")
-        .output()
-        .map_err(|err| {
-            Error::IO(format!(
-                "wg set {} peer {} remove failed: {:?}",
-                interface, peer.public_key, err
-            ))
-        })?;
+        .output()?;
 
     if !output_set.stderr.is_empty() {
         tracing::warn!(
@@ -97,8 +88,7 @@ pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), Error> {
         .arg("route")
         .arg("del")
         .arg(peer.ip.to_string())
-        .output()
-        .map_err(|err| Error::IO(format!("ip -4 route del {} failed: {:?}", peer.ip, err)))?;
+        .output()?;
 
     if !output_route.stderr.is_empty() {
         tracing::warn!(

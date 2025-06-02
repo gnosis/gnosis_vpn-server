@@ -4,8 +4,10 @@ extern crate rocket;
 use anyhow::{Context, Result};
 use cli::Command;
 use figment::providers::{Format, Toml};
+use metrics::Metrics;
 use ops::Ops;
 use rocket::figment::Figment;
+use serde_json::json;
 use std::fs;
 use std::process;
 use tokio::time;
@@ -21,6 +23,7 @@ mod api_error;
 mod cli;
 mod config;
 mod ip_range;
+mod metrics;
 mod ops;
 mod register;
 mod remove;
@@ -36,6 +39,7 @@ async fn main() -> Result<()> {
     let content = fs::read_to_string(config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
     let ops = Ops::from(config);
+    let metrics = Metrics::create().context("failed initializing metrics")?;
 
     match args.command {
         Command::Serve {
@@ -73,11 +77,13 @@ async fn main() -> Result<()> {
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let rocket = rocket::custom(figment)
                 .manage(ops.clone())
+                .manage(metrics)
                 .manage(sync_wg_interface)
                 .mount(
                     "/api/v1/clients",
                     routes![register::api, unregister::api, status::api_single],
                 )
+                .mount("/metrics", routes![metrics::metrics_endpoint])
                 .mount("/api/v1", routes![status::api])
                 .launch();
 
@@ -110,7 +116,8 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     if json {
-                        println!("{}", serde_json::to_string_pretty(&err)?);
+                        let output = json!({"error": err.to_string()});
+                        println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
                         println!("{:?}", err);
                     }
@@ -131,7 +138,8 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     if json {
-                        println!("{}", serde_json::to_string_pretty(&err)?);
+                        let output = json!({"error": err.to_string()});
+                        println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
                         println!("{:?}", err);
                     }
@@ -168,7 +176,8 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     if json {
-                        println!("{}", serde_json::to_string_pretty(&err)?);
+                        let output = json!({"error": err.to_string()});
+                        println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
                         println!("{:?}", err);
                     }
@@ -197,7 +206,8 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     if json {
-                        println!("{}", serde_json::to_string_pretty(&err)?);
+                        let output = json!({"error": err.to_string()});
+                        println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
                         println!("{:?}", err);
                     }
@@ -227,7 +237,8 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     if json {
-                        println!("{}", serde_json::to_string_pretty(&err)?);
+                        let output = json!({"error": err.to_string()});
+                        println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
                         println!("{:?}", err);
                     }
@@ -253,7 +264,8 @@ async fn main() -> Result<()> {
                 }
                 Err(err) => {
                     if json {
-                        println!("{}", serde_json::to_string_pretty(&err)?);
+                        let output = json!({"error": err.to_string()});
+                        println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
                         println!("{:?}", err);
                     }

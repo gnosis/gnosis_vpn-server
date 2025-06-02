@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.70"
 name = "tokio"
-version = "1.44.2"
+version = "1.45.1"
 authors = ["Tokio Contributors <team@tokio.rs>"]
 build = false
 autolib = false
@@ -465,10 +465,6 @@ name = "rt_threaded"
 path = "tests/rt_threaded.rs"
 
 [[test]]
-name = "rt_threaded_alt"
-path = "tests/rt_threaded_alt.rs"
-
-[[test]]
 name = "rt_time_start_paused"
 path = "tests/rt_time_start_paused.rs"
 
@@ -771,7 +767,7 @@ features = ["async-await"]
 version = "7.6.3"
 
 [dev-dependencies.mockall]
-version = "0.11.1"
+version = "0.13.0"
 
 [dev-dependencies.tokio-stream]
 version = "0.1"
@@ -810,7 +806,7 @@ version = "0.5.5"
 version = "3.1.0"
 
 [target.'cfg(target_os = "freebsd")'.dev-dependencies.mio-aio]
-version = "0.9.0"
+version = "1"
 features = ["tokio"]
 
 [target."cfg(tokio_taskdump)".dependencies.backtrace]

@@ -42,6 +42,8 @@ let
       "armv7-unknown-linux-gnueabihf"
     else if useMusl then
       pkgs.lib.systems.examples.musl64.config
+    else if hostPlatform.config == "aarch64-apple-darwin" then
+      "aarch64-apple-darwin"
     else hostPlatform.config;
 
   rustToolchain =

@@ -1,5 +1,7 @@
-use serde::Serialize;
+use thiserror::Error;
+
 use std::fs::File;
+use std::io::Error as IOError;
 use std::io::Write;
 use std::process::Command;
 
@@ -16,12 +18,16 @@ pub struct Dump {
     pub peers: Vec<Peer>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
-    NoInterface,
-    NoAddress,
+    #[error("Generic error: {0}")]
     Generic(String),
-    IO(String),
+    #[error("IO error: {0}")]
+    IO(#[from] IOError),
+    #[error("No interface found")]
+    NoInterface,
+    #[error("Failed parsing interface address")]
+    NoAddress,
 }
 
 pub fn save_file(ops: &Ops) -> Result<(), Error> {
@@ -36,8 +42,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
         .arg("addr")
         .arg("show")
         .arg(interface)
-        .output()
-        .map_err(|err| Error::IO(format!("ip -f inet addr show {} failed: {:?}", interface, err)))?;
+        .output()?;
 
     if !output_ip_addr.status.success() {
         return Err(Error::Generic(format!(
@@ -54,11 +59,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
         )
     }
 
-    let output_wg = Command::new("wg")
-        .arg("showconf")
-        .arg(interface)
-        .output()
-        .map_err(|err| Error::IO(format!("wg showconf {} failed: {:?}", interface, err)))?;
+    let output_wg = Command::new("wg").arg("showconf").arg(interface).output()?;
 
     if !output_wg.status.success() {
         return Err(Error::Generic(format!("wg showconf failed: {:?}", output_wg)));
@@ -102,7 +103,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
     let mut content = Vec::with_capacity(prepend.len() + modified_output_bytes.len());
     content.extend_from_slice(prepend);
     content.extend_from_slice(modified_output_bytes);
-    let mut f = File::create(&ops.wg_interface_config).map_err(|err| Error::IO(err.to_string()))?;
-    f.write_all(&content).map_err(|err| Error::IO(err.to_string()))?;
+    let mut f = File::create(&ops.wg_interface_config)?;
+    f.write_all(&content)?;
     Ok(())
 }

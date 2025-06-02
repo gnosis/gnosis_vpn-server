@@ -1,4 +1,6 @@
-use serde::Serialize;
+use thiserror::Error;
+
+use std::io::Error as IOError;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::process::Command;
 
@@ -14,22 +16,22 @@ pub struct Dump {
     pub peers: Vec<Peer>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Generic error: {0}")]
     Generic(String),
-    IO(String),
+    #[error("IO error: {0}")]
+    IO(#[from] IOError),
+    #[error("No output lines found")]
     NoOutputLines,
+    #[error("Wrong number of fields in server line")]
     WrongNumberOfFieldsInServerLine,
+    #[error("Wrong number of fields in peer line")]
     WrongNumberOfFieldsInPeerLine,
 }
 
 pub fn dump(interface: &str) -> Result<Dump, Error> {
-    let output = Command::new("wg")
-        .arg("show")
-        .arg(interface)
-        .arg("dump")
-        .output()
-        .map_err(|err| Error::IO(format!("wg show {} dump failed: {:?}", interface, err)))?;
+    let output = Command::new("wg").arg("show").arg(interface).arg("dump").output()?;
 
     if !output.status.success() {
         return Err(Error::Generic(format!("wg show dump failed: {:?}", output)));

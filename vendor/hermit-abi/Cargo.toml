@@ -12,7 +12,7 @@
 [package]
 edition = "2021"
 name = "hermit-abi"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Stefan Lankes"]
 build = false
 autolib = false

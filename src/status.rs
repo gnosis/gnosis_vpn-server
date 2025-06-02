@@ -1,7 +1,10 @@
 use rocket::serde::json::Json;
 use rocket::State;
 use serde::Serialize;
+use thiserror::Error;
+
 use std::net::Ipv4Addr;
+use std::time::SystemTimeError;
 
 use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
@@ -51,11 +54,14 @@ pub struct PublicKeys {
     never_connected: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("No interface found")]
     NoInterface,
-    WgShow(show::Error),
-    SystemTime(String),
+    #[error("Error during wg show: {0}")]
+    WgShow(#[from] show::Error),
+    #[error("System time error: {0}")]
+    SystemTime(#[from] SystemTimeError),
 }
 
 #[get("/status/<public_key>")]
@@ -100,10 +106,7 @@ pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
     match res_peer {
         Some(peer) => {
             if peer.has_handshaked() {
-                if peer
-                    .timed_out(&ops.client_handshake_timeout)
-                    .map_err(|err| Error::SystemTime(err.to_string()))?
-                {
+                if peer.timed_out(&ops.client_handshake_timeout)? {
                     Ok(StatusSingle {
                         public_key: peer.public_key.clone(),
                         ip: Some(peer.ip),
@@ -153,9 +156,9 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
         .partition::<Vec<_>, _>(|(_, res_timed_out)| res_timed_out.is_ok());
 
     // fail if any system time error occured
-    for (_, err) in bad_handshaked_public_keys {
-        if let Err(err) = err {
-            return Err(Error::SystemTime(err.to_string()));
+    for (_, res) in bad_handshaked_public_keys {
+        if let Err(err) = res {
+            return Err(Error::SystemTime(err));
         }
     }
 

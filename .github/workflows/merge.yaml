@@ -10,27 +10,6 @@ concurrency:
   group: merge
   cancel-in-progress: false
 jobs:
-  delete-artifacts:
-    name: Delete artifacts
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup GCP
-        id: gcp
-        uses: hoprnet/hopr-workflows/actions/setup-gcp@master
-        with:
-          google-credentials: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
-          install-sdk: "true"
-      - name: Delete artifacts
-        run: |
-          set -x
-          pr_version=$(grep -E '^version\s*=' Cargo.toml | awk -F\" '{print $2}')-pr.${{ github.event.pull_request.number }}
-          echo "pr_version=$pr_version" >> ·GITHUB_OUTPUT
-          gcloud config set artifacts/location europe-west3
-          gcloud artifacts versions delete --quiet --repository="rust-binaries" --package=gnosis_vpn ${pr_version}  2> /dev/null || true
-          gcloud artifacts versions delete --quiet --repository="rust-binaries" --package=gnosis_vpn ${pr_version}  2> /dev/null || true
   build-binaries:
     strategy:
       matrix:
@@ -42,8 +21,6 @@ jobs:
           - architecture: armv7l-linux
             runner: ubuntu-latest
     name: Binary ${{ matrix.binary.architecture }}
-    needs:
-      - delete-artifacts
     uses: ./.github/workflows/build-binaries.yaml
     with:
       branch: ${{ github.sha }} # Use the commit SHA as the branch is deleted after the PR is merged

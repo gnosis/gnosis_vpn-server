@@ -2,6 +2,8 @@ use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::State;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
 use std::collections::HashSet;
 use std::net::Ipv4Addr;
 
@@ -17,13 +19,18 @@ pub struct Register {
     server_public_key: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("No interface found")]
     NoInterface,
+    #[error("No free IP available")]
     NoFreeIp,
+    #[error("IP address already taken")]
     IpAlreadyTaken,
-    WgShow(show::Error),
-    WgSet(set::Error),
+    #[error("Error during wg show: {0}")]
+    WgShow(#[from] show::Error),
+    #[error("Error during wg set: {0}")]
+    WgSet(#[from] set::Error),
 }
 
 #[derive(Deserialize)]
