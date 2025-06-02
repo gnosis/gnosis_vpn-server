@@ -1,12 +1,16 @@
-use serde::Serialize;
+use thiserror::Error;
+
+use std::io::Error as IOError;
 use std::process::Command;
 
 use crate::ops::Ops;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Generic error: {0}")]
     Generic(String),
-    IO(String),
+    #[error("IO error: {0}")]
+    IO(#[from] IOError),
 }
 
 pub fn up(ops: &Ops) -> Result<(), Error> {
@@ -14,8 +18,7 @@ pub fn up(ops: &Ops) -> Result<(), Error> {
     let output = Command::new("wg-quick")
         .arg("up")
         .arg(interface_file.clone())
-        .output()
-        .map_err(|err| Error::IO(format!("wg-quick up {:?} failed: {:?}", interface_file, err)))?;
+        .output()?;
 
     if !output.status.success() {
         return Err(Error::Generic(format!("wg-quick up failed: {:?}", output)));
@@ -37,8 +40,7 @@ pub fn down(ops: &Ops) -> Result<(), Error> {
     let output = Command::new("wg-quick")
         .arg("down")
         .arg(interface_file.clone())
-        .output()
-        .map_err(|err| Error::IO(format!("wg-quick down {:?} failed: {:?}", interface_file, err)))?;
+        .output()?;
 
     if !output.status.success() {
         return Err(Error::Generic(format!("wg-quick down failed: {:?}", output)));

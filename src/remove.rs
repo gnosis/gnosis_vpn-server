@@ -1,6 +1,8 @@
 use serde::Serialize;
+use thiserror::Error;
+
 use std::collections::HashSet;
-use std::time::Duration;
+use std::time::{Duration, SystemTimeError};
 
 use crate::ops::Ops;
 use crate::unregister;
@@ -24,12 +26,16 @@ pub struct RemoveDisconnected {
     pub removed: Vec<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("No interface found")]
     NoInterface,
-    WgShow(show::Error),
-    Unregister(unregister::Error),
-    SystemTime(String),
+    #[error("Error during wg show: {0}")]
+    WgShow(#[from] show::Error),
+    #[error("Error unregistering: {0}")]
+    Unregister(#[from] unregister::Error),
+    #[error("System time error: {0}")]
+    SystemTime(#[from] SystemTimeError),
 }
 
 pub fn previously_disconnected(ops: &Ops, once_not_connected: &[String]) -> Result<RemoveDisconnected, Error> {
@@ -79,9 +85,9 @@ pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) ->
         .partition::<Vec<_>, _>(|(_, res_timed_out)| res_timed_out.is_ok());
 
     // fail if any system time error occured
-    for (_, err) in bad_peers {
-        if let Err(err) = err {
-            return Err(Error::SystemTime(err.to_string()));
+    for (_, res) in bad_peers {
+        if let Err(err) = res {
+            return Err(Error::SystemTime(err));
         }
     }
 

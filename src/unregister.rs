@@ -2,6 +2,7 @@ use rocket::http::Status;
 use rocket::serde::{json::Json, Deserialize};
 use rocket::State;
 use serde::Serialize;
+use thiserror::Error;
 
 use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
@@ -12,12 +13,16 @@ pub struct Unregister {
     public_key: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("No interface found")]
     NoInterface,
+    #[error("Peer not found")]
     PeerNotFound,
-    WgSet(set::Error),
-    WgShow(show::Error),
+    #[error("Error during wg set: {0}")]
+    WgSet(#[from] set::Error),
+    #[error("Error during wg show: {0}")]
+    WgShow(#[from] show::Error),
 }
 
 #[derive(Deserialize)]

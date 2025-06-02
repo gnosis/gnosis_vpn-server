@@ -1,48 +1,66 @@
 use prometheus::{register_int_gauge, Encoder, IntGauge, TextEncoder};
 use rocket::http::ContentType;
 use rocket::State;
+use thiserror::Error;
 
+use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
-use crate::wg::show;
+use crate::wg::show::{self, Error as ShowError};
 
 #[derive(Debug, Clone)]
 pub struct Metrics {
     pub registered_clients: IntGauge,
 }
 
-impl Metrics {
-    pub fn new() -> Self {
-        // Use the global registry to register the metric
-        let registered_clients =
-            register_int_gauge!("gnosisvpn_registered_clients", "Number of registered clients").unwrap();
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Prometheus error: {0}")]
+    Prometheus(#[from] prometheus::Error),
+    #[error("UTF-8 conversion error: {0}")]
+    Utf8Conversion(#[from] std::string::FromUtf8Error),
+    #[error("No interface found")]
+    NoInterface,
+    #[error("Error during wg show: {0}")]
+    WgShow(#[from] ShowError),
+}
 
-        Metrics { registered_clients }
+impl Metrics {
+    pub fn create() -> Result<Self, Error> {
+        let registered_clients = register_int_gauge!("gnosisvpn_registered_clients", "Number of registered clients")?;
+        Ok(Metrics { registered_clients })
     }
 
-    pub fn gather_metrics(&self) -> String {
+    pub fn gather_metrics(&self) -> Result<String, Error> {
         let encoder = TextEncoder::new();
         let registered_metrics = prometheus::gather();
         let mut buffer_metrics = Vec::new();
-        encoder.encode(&registered_metrics, &mut buffer_metrics).unwrap();
-        String::from_utf8(buffer_metrics).unwrap()
+        encoder.encode(&registered_metrics, &mut buffer_metrics)?;
+        String::from_utf8(buffer_metrics).map_err(Error::Utf8Conversion)
     }
 }
 
-pub fn calculate_registered_clients(ops: &Ops) -> i64 {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return 0,
-    };
-    let dump = match show::dump(interface) {
-        Ok(dump) => dump,
-        Err(_) => return 0,
-    };
-    dump.peers.len() as i64
+pub fn calculate_registered_clients(ops: &Ops) -> Result<i64, Error> {
+    let interface = ops.interface().ok_or(Error::NoInterface)?;
+    let dump = show::dump(interface)?;
+    Ok(dump.peers.len() as i64)
 }
 
 #[get("/")]
-pub fn metrics_endpoint(ops: &State<Ops>, metrics: &State<Metrics>) -> (ContentType, String) {
-    let registered_clients = calculate_registered_clients(ops);
+pub fn metrics_endpoint(ops: &State<Ops>, metrics: &State<Metrics>) -> Result<(ContentType, String), ApiError> {
+    let registered_clients = match calculate_registered_clients(ops) {
+        Ok(count) => count,
+        Err(err) => {
+            tracing::error!(?err, "Failed to calculate registered clients");
+            return Err(api_error::internal_server_error());
+        }
+    };
     metrics.registered_clients.set(registered_clients);
-    (ContentType::Plain, metrics.gather_metrics())
+    let encoded = match metrics.gather_metrics() {
+        Ok(data) => data,
+        Err(err) => {
+            tracing::error!(?err, "Failed to gather metrics");
+            return Err(api_error::internal_server_error());
+        }
+    };
+    Ok((ContentType::Plain, encoded))
 }
