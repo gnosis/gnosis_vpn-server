@@ -14,9 +14,11 @@ docker-run:
     set -o errexit -o nounset -o pipefail
 
     priv_key=$(if [ "${PRIVATE_KEY:-}" = "" ]; then wg genkey; else echo "${PRIVATE_KEY}"; fi)
+    log_level=$(if [ "${RUST_LOG:-}" = "" ]; then echo info; else echo "${RUST_LOG}"; fi)
 
     docker run --rm --detach \
         --env PRIVATE_KEY=${priv_key} \
+        --env RUST_LOG=${log_level} \
         --publish 8000:8000 \
         --publish 51821:51820/udp \
         --cap-add=NET_ADMIN \
@@ -30,7 +32,7 @@ docker-stop:
 
 # enter docker container interactively
 docker-enter:
-    docker exec --interactive --tty gnosis_vpn-server-dev bash
+    docker exec --interactive --tty gnosis_vpn-server bash
 
 # checkout submodules
 submodules:
@@ -42,7 +44,7 @@ start-cluster:
     cd modules/hoprnet
     nix develop .#cluster --command make localcluster-exposed
 
-[doc('''Run full system setup with ping tests:
+[doc('''Run full system setup with ping test:
 This will start a local cluster, start the server and client, and run a ping test.
    'mode' can be either 'keep-running' or 'ci-system-test', with 'keep-running' being the default
 ''')]
