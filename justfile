@@ -13,11 +13,10 @@ docker-run:
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
 
-    priv_key=$(if [ "${PRIVATE_KEY:-}" = "" ]; then wg genkey; else echo "${PRIVATE_KEY}"; fi)
     log_level=$(if [ "${RUST_LOG:-}" = "" ]; then echo info; else echo "${RUST_LOG}"; fi)
 
     docker run --rm --detach \
-        --env PRIVATE_KEY=${priv_key} \
+        --env PRIVATE_KEY=${PRIVATE_KEY:-} \
         --env RUST_LOG=${log_level} \
         --publish 8000:8000 \
         --publish 51821:51820/udp \
