@@ -204,7 +204,7 @@ system-setup mode='keep-running': submodules docker-build
     sleep 17
     [ 1 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.expired) ]
     sleep 17
-    [ 10 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.availabe) ]
+    [ 10 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.available) ]
 
     if [ "{{ mode }}" = "ci-system-test" ]; then
         echo "[SUCCESS] System test completed successfully"
