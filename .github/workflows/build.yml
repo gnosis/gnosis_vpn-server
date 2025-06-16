@@ -79,7 +79,7 @@ jobs:
       - name: Install reqs via apt
         run: sudo apt-get install -y just jq
       - name: Run system tests
-        run: just system-setup mode=ci-system-test
+        run: just system-setup ci-system-test
   build-binaries:
     strategy:
       matrix:
