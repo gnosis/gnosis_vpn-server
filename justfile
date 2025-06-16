@@ -191,7 +191,20 @@ system-setup mode='keep-running': submodules docker-build
     echo "[PHASE3] Client is ready for testing"
 
     # 3c: run system tests
-    echo "[PHASE3] TODO"
+    echo "[PHASE3] Checking connect via first local node"
+    docker exec gnosis_vpn-client ./gnosis_vpn-ctl connect ${PEER_ID_LOCAL5}
+    exp_client_log "VPN CONNECTION ESTABLISHED" 11
+    echo "[PHASE3] Checking number of connected slots correct"
+    [ 1 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.connected) ]
+    echo "[PHASE3] Checking removal of inactive clients'
+    docker kill gnosis_vpn-client
+
+    # client ping is sent every 5-10 secs with 4 sec timeout
+    # server handshake timeout is 15 sec, check interval 16 sec
+    sleep 17
+    [ 1 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.expired) ]
+    sleep 17
+    [ 10 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.availabe) ]
 
     if [ "{{ mode }}" = "ci-system-test" ]; then
         echo "[SUCCESS] System test completed successfully"
