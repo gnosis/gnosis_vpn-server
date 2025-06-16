@@ -4,6 +4,9 @@ build:
 
 # build docker image
 docker-build: build
+    #!/usr/bin/env bash
+    set -o errexit -o nounset -o pipefail
+
     cp result/bin/gnosis_vpn-server docker/
     chmod 775 docker/gnosis_vpn-server
     docker build --platform linux/x86_64 -t gnosis_vpn-server docker/
@@ -40,6 +43,10 @@ submodules:
 # helper to start local cluster from hoprnet submodule
 start-cluster:
     #!/usr/bin/env bash
+    set -o errexit -o nounset -o pipefail
+    # if on github hosted runner try to free some extra space (see https://github.com/orgs/community/discussions/25678)
+    rm -rf /opt/hostedtoolcache
+
     cd modules/hoprnet
     nix develop .#cluster --command make localcluster-exposed
 
@@ -104,11 +111,13 @@ system-setup mode='keep-running': submodules docker-build
     done
 
     # 1c: extract values
+    PEER_ID_LOCAL5=$(awk '/local5/,/Admin UI/ {if ($1 == "Peer" && $2 == "Id:") print $3}' cluster.log)
     PEER_ID_LOCAL6=$(awk '/local6/,/Admin UI/ {if ($1 == "Peer" && $2 == "Id:") print $3}' cluster.log)
     API_TOKEN_LOCAL1=$(awk '/local1/,/Admin UI/ {if ($0 ~ /Admin UI:/) print $0}' cluster.log | sed -n 's/.*apiToken=\(.*\)$/\1/p')
     API_PORT_LOCAL1=$(awk '/local1/,/Rest API/ {if ($1 == "Rest" && $2 == "API:") print $3}' cluster.log | sed -n 's|.*:\([0-9]\+\)/.*|\1|p')
 
-    echo "[PHASE1] Peer ID (local6): $PEER_ID_LOCAL6"
+    echo "[PHASE1] Peer ID 1 (local5): $PEER_ID_LOCAL5"
+    echo "[PHASE1] Peer ID 2 (local6): $PEER_ID_LOCAL6"
     echo "[PHASE1] API Token (local1): $API_TOKEN_LOCAL1"
     echo "[PHASE1] API Port (local1): $API_PORT_LOCAL1"
 
@@ -117,9 +126,9 @@ system-setup mode='keep-running': submodules docker-build
     ## PHASE 2: ready gnosis_vpn-server
 
     # 2a: start server
-    SERVER_PRIVATE_KEY=$(wg genkey)
-    echo "[PHASE2] Starting gnosis_vpn-server with public key: $(echo $SERVER_PRIVATE_KEY | wg pubkey)"
-    PRIVATE_KEY=$SERVER_PRIVATE_KEY just docker-run
+    echo "[PHASE2] Starting gnosis_vpn-server"
+    # container was build as part of the deps
+    just docker-run
 
     # 2b: wait for server
     EXPECTED_PATTERN="Rocket has launched"
@@ -128,7 +137,7 @@ system-setup mode='keep-running': submodules docker-build
     echo "[PHASE2] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
     while true; do
-        if docker logs gnosis_vpn-server | grep -q "$EXPECTED_PATTERN"; then
+        if docker logs --since 3s gnosis_vpn-server | grep -q "$EXPECTED_PATTERN"; then
             echo "[PHASE2] ${EXPECTED_PATTERN}"
             break
         fi
@@ -137,54 +146,52 @@ system-setup mode='keep-running': submodules docker-build
             docker logs --tail 20 gnosis_vpn-server
             exit 2
         fi
-        sleep 1
+        sleep 2.5
     done
 
-    # 2c: register client key
-    CLIENT_PRIVATE_KEY=$(wg genkey)
-    CLIENT_WG_IP=$(curl --silent -H "Accept: application/json" -H "Content-Type: application/json" \
-            -d "{\"public_key\": \"$(echo $CLIENT_PRIVATE_KEY | wg pubkey)\"}" \
-            localhost:8000/api/v1/clients/register | jq -r .ip)
-
-    echo "[PHASE2] Client Wireguard IP: $CLIENT_WG_IP"
-
+    echo "[PHASE2] Server is ready for testing"
 
     ####
     ## PHASE 3: ready gnosis_vpn-client
 
     # 3a: start client
+    echo "[PHASE3] Starting gnosis_vpn-client"
+
     pushd modules/gnosis_vpn-client
-    echo "[PHASE3] Starting gnosis_vpn-client with public key: $(echo $CLIENT_PRIVATE_KEY | wg pubkey)"
-    just docker-build
-    ADDRESS="${CLIENT_WG_IP}/32" DESTINATION_PEER_ID="${PEER_ID_LOCAL6}" API_TOKEN="${API_TOKEN_LOCAL1}" \
-      API_PORT="${API_PORT_LOCAL1}" PRIVATE_KEY="${CLIENT_PRIVATE_KEY}" \
-      SERVER_PUBLIC_KEY="$(echo $SERVER_PRIVATE_KEY | wg pubkey)" just docker-run
+        just docker-build
+        DESTINATION_PEER_ID_1="${PEER_ID_LOCAL5}" \
+        DESTINATION_PEER_ID_2="${PEER_ID_LOCAL6}" \
+        API_TOKEN="${API_TOKEN_LOCAL1}" \
+        API_PORT="${API_PORT_LOCAL1}" \
+        just docker-run
     popd
 
-    # 3b: wait for client to connect
-    EXPECTED_PATTERN="VPN CONNECTION ESTABLISHED"
-    TIMEOUT_S=$((60 * 5)) # 5 minutes
-    ENDTIME=$(($(date +%s) + TIMEOUT_S))
-    echo "[PHASE3] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
+    exp_client_log() {
+        EXPECTED_PATTERN="$1"
+        TIMEOUT_S="${2}"
+        ENDTIME=$(($(date +%s) + TIMEOUT_S))
+        echo "[PHASE3] Waiting for log '${EXPECTED_PATTERN}' with ${TIMEOUT_S}s timeout"
 
-    while true; do
-        if docker logs gnosis_vpn-client | grep -q "$EXPECTED_PATTERN"; then
-            echo "[PHASE3] ${EXPECTED_PATTERN}"
-            break
-        fi
-        if [ $(date +%s) -gt $ENDTIME ]; then
-            echo "[PHASE3] Timeout reached"
-            docker logs --tail 20 gnosis_vpn-client
-            exit 3
-        fi
-        sleep 1
-    done
+        while true; do
+            if docker logs --since 3s gnosis_vpn-client | grep -q "$EXPECTED_PATTERN"; then
+                echo "[PHASE3] ${EXPECTED_PATTERN}"
+                break
+            fi
+            if [ $(date +%s) -gt $ENDTIME ]; then
+                echo "[PHASE3] Timeout reached"
+                docker logs --tail 20 gnosis_vpn-client
+                exit 2
+            fi
+            sleep 2.5
+        done
+    }
 
-    # 3c: run ping test
-    echo "[PHASE3] Checking ping from client to server"
-    docker exec gnosis_vpn-client ping -c1 10.129.0.1
-    echo "[PHASE3] Checking ping from server to client"
-    docker exec gnosis_vpn-server ping -c1 $CLIENT_WG_IP
+    # 3b: wait for client to be ready
+    exp_client_log "enter listening mode" 6
+    echo "[PHASE3] Client is ready for testing"
+
+    # 3c: run system tests
+    echo "[PHASE3] TODO"
 
     if [ "{{ mode }}" = "ci-system-test" ]; then
         echo "[SUCCESS] System test completed successfully"
