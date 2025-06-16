@@ -196,7 +196,7 @@ system-setup mode='keep-running': submodules docker-build
     exp_client_log "VPN CONNECTION ESTABLISHED" 11
     echo "[PHASE3] Checking number of connected slots correct"
     [ 1 = $(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json | jq .slots.connected) ]
-    echo "[PHASE3] Checking removal of inactive clients'
+    echo "[PHASE3] Checking removal of inactive clients"
     docker kill gnosis_vpn-client
 
     # client ping is sent every 5-10 secs with 4 sec timeout
