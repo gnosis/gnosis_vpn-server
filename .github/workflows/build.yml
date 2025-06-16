@@ -14,7 +14,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,12 +30,60 @@ jobs:
           USER: runner
       - name: Build
         run: nix build .#gvpn -L
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Use Nix Cache
+        uses: cachix/cachix-action@v16
+        with:
+          name: gnosis-vpn-client
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        env:
+          USER: runner
       - name: Lint and formatting check
         run: nix run .#check
-      - name: Tests
+  unittest:
+    name: Unit test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Use Nix Cache
+        uses: cachix/cachix-action@v16
+        with:
+          name: gnosis-vpn-client
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        env:
+          USER: runner
+      - name: Run unit tests
         run: nix build .#gvpn-test
-      - name: System Test
-        run: nix develop --command just system-setup ci-system-test
+  systemtest:
+    name: System test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Use Nix Cache
+        uses: cachix/cachix-action@v16
+        with:
+          name: gnosis-vpn-client
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          extaPullNames: "hoprnet"
+        env:
+          USER: runner
+      - name: Install reqs via apt
+        run: sudo apt-get install -y just jq
+      - name: Run system tests
+        run: just system-setup mode=ci-system-test
   build-binaries:
     strategy:
       matrix:
