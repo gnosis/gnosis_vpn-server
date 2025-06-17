@@ -210,7 +210,7 @@ system-setup mode='keep-running': submodules docker-build
     echo "[PHASE3] Checking removal of expired clients"
     sleep 17
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
-    [ 10 = $(server_status | jq .slots.available) ] || {
+    [ 10 = $(echo "$server_status" | jq .slots.available) ] || {
         echo "[PHASE3] ERROR: Expected 10 available slots, got: $server_status"
         exit 1
     }
