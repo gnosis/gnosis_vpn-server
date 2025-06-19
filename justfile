@@ -215,6 +215,18 @@ system-setup mode='keep-running': submodules docker-build
         exit 1
     }
 
+    echo "[PHASE3] Checking no warnings or errors"
+    if docker logs gnosis_vpn-server | grep -qE "WARN|ERROR"; then
+        echo "[PHASE3] Found warnings or errors in server logs"
+        docker logs gnosis_vpn-server
+        exit 1
+    fi
+    if docker logs gnosis_vpn-client | grep -qE "WARN|ERROR"; then
+        echo "[PHASE3] Found warnings or errors in client logs"
+        docker logs gnosis_vpn-client
+        exit 1
+    fi
+
     if [ "{{ mode }}" = "ci-system-test" ]; then
         echo "[SUCCESS] System test completed successfully"
         exit 0
