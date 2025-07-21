@@ -123,7 +123,7 @@ system-setup mode='keep-running': submodules
 
 
     ####
-    ## PHASE 2: ready gnosis_vpn-server and gnsosis_vpn-client
+    ## PHASE 2: ready gnosis_vpn-server and gnosis_vpn-client
 
     # 2a: build server
     echo "[PHASE2] Building gnosis_vpn-server"
@@ -140,6 +140,7 @@ system-setup mode='keep-running': submodules
 
     # 2c: start server
     echo "[PHASE2] Starting gnosis_vpn-server"
+    just docker-run
 
     # 2d: wait for server
     EXPECTED_PATTERN="Rocket has launched"
