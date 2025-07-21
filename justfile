@@ -200,15 +200,15 @@ system-setup mode='keep-running': submodules docker-build
     docker kill gnosis_vpn-client
 
     # client ping is sent every 5-10 secs with 4 sec timeout
-    # server handshake timeout is 15 sec, check interval 16 sec
-    sleep 17
+    # server handshake timeout is 150 sec, check interval 90 sec
+    sleep $((90 + 90 + 1)) # wait for 2 check intervals
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
     [ 1 = $(echo "$server_status" | jq .slots.expired) ] || {
         echo "[PHASE3] ERROR: Expected 1 expired slot, got: $server_status"
         exit 1
     }
     echo "[PHASE3] Checking removal of expired clients"
-    sleep 17
+    sleep $((90 + 1)) # wait for another check interval
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
     [ 10 = $(echo "$server_status" | jq .slots.available) ] || {
         echo "[PHASE3] ERROR: Expected 10 available slots, got: $server_status"
