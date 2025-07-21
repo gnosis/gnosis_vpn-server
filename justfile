@@ -51,7 +51,7 @@ start-cluster:
     nix develop .#cluster --command make localcluster-exposed
 
 # full system setup with system tests: 'mode' can be either 'keep-running' or 'ci-system-test'
-system-setup mode='keep-running': submodules docker-build
+system-setup mode='keep-running': submodules
     #!/usr/bin/env bash
     set -o errexit -o nounset -o pipefail
 
@@ -123,14 +123,25 @@ system-setup mode='keep-running': submodules docker-build
 
 
     ####
-    ## PHASE 2: ready gnosis_vpn-server
+    ## PHASE 2: ready gnosis_vpn-server and gnsosis_vpn-client
 
-    # 2a: start server
+    # 2a: build server
+    echo "[PHASE2] Building gnosis_vpn-server"
+    # adjust timeout values for testing
+    sed -i 's/client_handshake_timeout_s = 150/client_handshake_timeout_s = 15/' docker/config.toml
+    sed -i 's/client_cleanup_interval_s = 90/client_cleanup_interval_s = 9/' docker/config.toml
+    just docker-build
+
+    # 2b: build client
+    echo "[PHASE2] Building gnosis_vpn-client"
+    pushd modules/gnosis_vpn-client
+        just docker-build
+    popd
+
+    # 2c: start server
     echo "[PHASE2] Starting gnosis_vpn-server"
-    # container was build as part of the deps
-    just docker-run
 
-    # 2b: wait for server
+    # 2d: wait for server
     EXPECTED_PATTERN="Rocket has launched"
     TIMEOUT_S=$((60 * 5)) # 5 minutes
     ENDTIME=$(($(date +%s) + TIMEOUT_S))
@@ -152,13 +163,12 @@ system-setup mode='keep-running': submodules docker-build
     echo "[PHASE2] Server is ready for testing"
 
     ####
-    ## PHASE 3: ready gnosis_vpn-client
+    ## PHASE 3: test gnosis_vpn-client
 
     # 3a: start client
     echo "[PHASE3] Starting gnosis_vpn-client"
 
     pushd modules/gnosis_vpn-client
-        just docker-build
         DESTINATION_PEER_ID_1="${PEER_ID_LOCAL5}" \
         DESTINATION_PEER_ID_2="${PEER_ID_LOCAL6}" \
         API_TOKEN="${API_TOKEN_LOCAL1}" \
@@ -200,15 +210,15 @@ system-setup mode='keep-running': submodules docker-build
     docker kill gnosis_vpn-client
 
     # client ping is sent every 5-10 secs with 4 sec timeout
-    # server handshake timeout is 150 sec, check interval 90 sec
-    sleep $((90 + 90 + 1)) # wait for 2 check intervals
+    # server handshake timeout is 15 sec, check interval 9 sec
+    sleep 24 # wait expired plus check interval
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
     [ 1 = $(echo "$server_status" | jq .slots.expired) ] || {
         echo "[PHASE3] ERROR: Expected 1 expired slot, got: $server_status"
         exit 1
     }
     echo "[PHASE3] Checking removal of expired clients"
-    sleep $((90 + 1)) # wait for another check interval
+    sleep 9 # wait for another check interval
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
     [ 10 = $(echo "$server_status" | jq .slots.available) ] || {
         echo "[PHASE3] ERROR: Expected 10 available slots, got: $server_status"
