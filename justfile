@@ -128,8 +128,8 @@ system-setup mode='keep-running': submodules
     # 2a: build server
     echo "[PHASE2] Building gnosis_vpn-server"
     # adjust timeout values for testing
-    sed -i 's/client_handshake_timeout_s = 150/client_handshake_timeout_s = 15/' docker/config.toml
-    sed -i 's/client_cleanup_interval_s = 90/client_cleanup_interval_s = 9/' docker/config.toml
+    sed -i 's/client_handshake_timeout_s = 150/client_handshake_timeout_s = 5/' docker/config.toml
+    sed -i 's/client_cleanup_interval_s = 90/client_cleanup_interval_s = 15/' docker/config.toml
     just docker-build
 
     # 2b: build client
@@ -212,14 +212,14 @@ system-setup mode='keep-running': submodules
 
     # client ping is sent every 5-10 secs with 4 sec timeout
     # server handshake timeout is 15 sec, check interval 9 sec
-    sleep 24 # wait expired plus check interval
+    sleep 5 # wait expired check duration
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
     [ 1 = $(echo "$server_status" | jq .slots.expired) ] || {
         echo "[PHASE3] ERROR: Expected 1 expired slot, got: $server_status"
         exit 1
     }
     echo "[PHASE3] Checking removal of expired clients"
-    sleep 9 # wait for another check interval
+    sleep 10 # wait for remainder of check interval to run once
     server_status=$(docker exec gnosis_vpn-server ./gnosis_vpn-server -c config.toml status --json)
     [ 10 = $(echo "$server_status" | jq .slots.available) ] || {
         echo "[PHASE3] ERROR: Expected 10 available slots, got: $server_status"
