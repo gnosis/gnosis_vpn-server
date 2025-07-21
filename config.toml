@@ -6,6 +6,8 @@ wireguard_config_path = "./wggnosisvpn.conf"
 # [optional] server endpoint
 # endpoint = "127.0.0.1:8000"
 # [optional] determines when a client is considered disconnected
+# should be greater than the WireGuard keepalive interval (usually 60 seconds)
+# otherwise clients will have to recover constantly from dropping connections
 # client_handshake_timeout_s = 300
 # [optional] interval at which client removal job is run if enabled
 # client_cleanup_interval_s = 180
