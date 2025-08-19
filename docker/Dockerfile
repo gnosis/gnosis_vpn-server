@@ -2,7 +2,7 @@ FROM alpine:3.21
 
 # enable wireguard
 RUN \
-    apk add --no-cache --update wireguard-tools && \
+    apk add --no-cache --update wireguard-tools squid && \
     rm -rf /tmp/*
 
 WORKDIR /app
