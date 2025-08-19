@@ -11,6 +11,7 @@ WORKDIR /app
 COPY ./config.toml config.toml
 COPY ./wggvpn.conf wggvpn.conf
 COPY ./gnosis_vpn-server gnosis_vpn-server
+COPY ./squid.conf squid.conf
 COPY ./wrapper.sh wrapper.sh
 
 # port handling
