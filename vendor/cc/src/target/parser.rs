@@ -184,6 +184,10 @@ fn parse_arch(full_arch: &str) -> Option<&str> {
         "s390x" => "s390x",
         "xtensa" => "xtensa",
 
+        // Arches supported by gcc, but not LLVM.
+        arch if arch.starts_with("alpha") => "alpha", // DEC Alpha
+        "hppa" => "hppa", // https://en.wikipedia.org/wiki/PA-RISC, also known as HPPA
+        arch if arch.starts_with("sh") => "sh", // SuperH
         _ => return None,
     })
 }
@@ -221,14 +225,15 @@ fn parse_envabi(last_component: &str) -> Option<(&str, &str)> {
         "qnx800" => ("nto80", ""),
         "sgx" => ("sgx", ""),
         "threads" => ("threads", ""),
+        "mlibc" => ("mlibc", ""),
 
         // ABIs
         "abi64" => ("", "abi64"),
         "abiv2" => ("", "spe"),
         "eabi" => ("", "eabi"),
         "eabihf" => ("", "eabihf"),
-        "macabi" => ("", "macabi"),
-        "sim" => ("", "sim"),
+        "macabi" => ("macabi", ""),
+        "sim" => ("sim", ""),
         "softfloat" => ("", "softfloat"),
         "spe" => ("", "spe"),
         "x32" => ("", "x32"),
@@ -258,6 +263,17 @@ impl<'a> TargetInfo<'a> {
                 os: "linux",
                 env: "",
                 abi: "",
+            });
+        }
+
+        if target == "armv7a-vex-v5" {
+            return Ok(Self {
+                full_arch: "armv7a",
+                arch: "arm",
+                vendor: "vex",
+                os: "vexos",
+                env: "v5",
+                abi: "eabihf",
             });
         }
 
@@ -339,7 +355,7 @@ impl<'a> TargetInfo<'a> {
         match target {
             // Actually simulator targets.
             "i386-apple-ios" | "x86_64-apple-ios" | "x86_64-apple-tvos" => {
-                abi = "sim";
+                env = "sim";
             }
             // Name should've contained `muslabi64`.
             "mips64-openwrt-linux-musl" => {
@@ -400,6 +416,21 @@ impl<'a> TargetInfo<'a> {
         }
         if vendor == "uwp" {
             abi = "uwp";
+        }
+        if ["powerpc64-unknown-linux-gnu", "powerpc64-wrs-vxworks"].contains(&target) {
+            abi = "elfv1";
+        }
+        if [
+            "powerpc64-unknown-freebsd",
+            "powerpc64-unknown-linux-musl",
+            "powerpc64-unknown-openbsd",
+            "powerpc64le-unknown-freebsd",
+            "powerpc64le-unknown-linux-gnu",
+            "powerpc64le-unknown-linux-musl",
+        ]
+        .contains(&target)
+        {
+            abi = "elfv2";
         }
 
         Ok(Self {
@@ -463,6 +494,7 @@ mod tests {
             "x86_64-foxkit-linux-musl",
             "arm-poky-linux-gnueabi",
             "x86_64-unknown-moturus",
+            "x86_64-unknown-managarm-mlibc",
         ];
 
         for target in targets {
@@ -506,6 +538,11 @@ mod tests {
             } else {
                 // Skip cfgs like `debug_assertions` and `unix`.
             }
+        }
+
+        if matches!(target.abi, "macabi" | "sim") {
+            assert_eq!(target.env, target.abi);
+            target.abi = "";
         }
 
         target
