@@ -11,7 +11,7 @@
 
 [package]
 name = "signal-hook-registry"
-version = "1.4.5"
+version = "1.4.6"
 authors = [
     "Michal 'vorner' Vaner <vorner@vorner.cz>",
     "Masaki Hara <ackie.h.gmai@gmail.com>",
@@ -33,6 +33,12 @@ keywords = [
 license = "Apache-2.0/MIT"
 repository = "https://github.com/vorner/signal-hook"
 
+[badges.maintenance]
+status = "actively-developed"
+
+[badges.travis-ci]
+repository = "vorner/signal-hook"
+
 [lib]
 name = "signal_hook_registry"
 path = "src/lib.rs"
@@ -46,9 +52,3 @@ version = "^0.2"
 
 [dev-dependencies.signal-hook]
 version = "~0.3"
-
-[badges.maintenance]
-status = "actively-developed"
-
-[badges.travis-ci]
-repository = "vorner/signal-hook"

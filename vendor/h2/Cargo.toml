@@ -13,15 +13,21 @@
 edition = "2018"
 rust-version = "1.63"
 name = "h2"
-version = "0.3.26"
+version = "0.3.27"
 authors = [
     "Carl Lerche <me@carllerche.com>",
     "Sean McArthur <sean@seanmonstar.com>",
 ]
+build = false
 exclude = [
     "fixtures/**",
     "ci/**",
 ]
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
 description = "An HTTP/2 client and server"
 documentation = "https://docs.rs/h2"
 readme = "README.md"
@@ -40,6 +46,26 @@ repository = "https://github.com/hyperium/h2"
 
 [package.metadata.docs.rs]
 features = ["stream"]
+
+[features]
+stream = []
+unstable = []
+
+[lib]
+name = "h2"
+path = "src/lib.rs"
+
+[[example]]
+name = "akamai"
+path = "examples/akamai.rs"
+
+[[example]]
+name = "client"
+path = "examples/client.rs"
+
+[[example]]
+name = "server"
+path = "examples/server.rs"
 
 [dependencies.bytes]
 version = "1"
@@ -123,6 +149,7 @@ version = "2.3.2"
 [dev-dependencies.webpki-roots]
 version = "0.25"
 
-[features]
-stream = []
-unstable = []
+[lints.rust.unexpected_cfgs]
+level = "warn"
+priority = 0
+check-cfg = ["cfg(fuzzing)"]
