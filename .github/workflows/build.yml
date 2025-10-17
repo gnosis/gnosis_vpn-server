@@ -69,7 +69,6 @@ jobs:
               "namespace": "gnosisvpn",
               "label_selector": "app.kubernetes.io/instance=gnosisvpn-dev"
             }
-
   lint:
     name: Lint
     runs-on: ubuntu-24.04
