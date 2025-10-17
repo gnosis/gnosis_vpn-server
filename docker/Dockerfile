@@ -2,7 +2,7 @@ FROM alpine:3.22
 
 # enable wireguard
 RUN \
-    apk add --no-cache --update wireguard-tools && \
+    apk add --no-cache --update wireguard-tools iptables && \
     rm -rf /tmp/*
 
 WORKDIR /app
