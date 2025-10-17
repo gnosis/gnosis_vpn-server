@@ -75,7 +75,7 @@ jobs:
             {
               "environment": "staging",
               "namespace": "gnosisvpn",
-              "label_selector": "app.kubernetes.io/name=gnosisvpn-dev"
+              "label_selector": "app.kubernetes.io/instance=gnosisvpn-dev"
             }
 
   lint:
