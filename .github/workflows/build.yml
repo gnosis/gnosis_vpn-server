@@ -18,10 +18,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Install Nix
         uses: cachix/install-nix-action@v30
-
       - name: Use Nix Cache
         uses: cachix/cachix-action@v16
         with:
@@ -29,21 +27,17 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
         env:
           USER: runner
-
       - name: Setup GCP
         id: gcp
         uses: hoprnet/hopr-workflows/actions/setup-gcp@12c56020e16036982e6cc529848edeedfc705865 # master
         with:
           google-credentials: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
           login-artifact-registry: 'true'
-
       - name: Build
         run: nix build .#gvpn -L
-
       - name: Get PR labels
         id: pr-labels
         uses: joerick/pr-labels-action@0543b277721e852d821c6738d449f2f4dea03d5f # v1.0.9
-
       - name: Prepare Docker image
         id: vars
         run: |
@@ -56,14 +50,12 @@ jobs:
           echo "tags=$TAGS" | tee -a "$GITHUB_OUTPUT"
           cp result/bin/gnosis_vpn-server docker/
           chmod 775 docker/gnosis_vpn-server
-
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./docker
           push: true
           tags: ${{ steps.vars.outputs.tags }}
-
       - name: Trigger restart deployment
         if: env.GITHUB_PR_LABEL_DEPLOY_DEV == '1'
         uses: peter-evans/repository-dispatch@ff45666b9427631e3450c54a1bcbee4d9ff4d7c0 # v3.0.0

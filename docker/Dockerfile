@@ -8,8 +8,8 @@ RUN \
 WORKDIR /app
 
 # add local files
+COPY ./wg0.conf /etc/wireguard/wg0.conf
 COPY ./config.toml config.toml
-COPY ./wggvpn.conf wggvpn.conf
 COPY ./gnosis_vpn-server gnosis_vpn-server
 COPY ./wrapper.sh wrapper.sh
 
