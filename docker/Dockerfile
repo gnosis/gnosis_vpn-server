@@ -17,5 +17,4 @@ COPY ./wrapper.sh wrapper.sh
 EXPOSE 8000/tcp
 EXPOSE 51820/udp
 
-#CMD ["./wrapper.sh"]
-CMD ["/app/gnosis_vpn-server", "--config-file", "/app/config.toml", "serve", "--periodically-run-cleanup", "--sync-wg-interface"]
+CMD ["./wrapper.sh"]
