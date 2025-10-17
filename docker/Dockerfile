@@ -1,8 +1,8 @@
-FROM alpine:3.21
+FROM alpine:3.22
 
 # enable wireguard
 RUN \
-    apk add --no-cache --update wireguard-tools squid && \
+    apk add --no-cache --update wireguard-tools && \
     rm -rf /tmp/*
 
 WORKDIR /app
@@ -11,7 +11,6 @@ WORKDIR /app
 COPY ./config.toml config.toml
 COPY ./wggvpn.conf wggvpn.conf
 COPY ./gnosis_vpn-server gnosis_vpn-server
-COPY ./squid.conf squid.conf
 COPY ./wrapper.sh wrapper.sh
 
 # port handling

@@ -19,7 +19,7 @@ docker-run:
     log_level=$(if [ "${RUST_LOG:-}" = "" ]; then echo info; else echo "${RUST_LOG}"; fi)
 
     docker run --rm --detach \
-        --env PRIVATE_KEY=${PRIVATE_KEY:-} \
+        --env WG_PRIVATE_KEY=${WG_PRIVATE_KEY:-} \
         --env RUST_LOG=${log_level} \
         --publish 8000:8000 \
         --publish 51821:51820/udp \

@@ -2,14 +2,13 @@
 
 set -o errexit
 
-declare key="$PRIVATE_KEY"
+declare key="$WG_PRIVATE_KEY"
 if [ -z "$key" ]; then
-  echo "PRIVATE_KEY is not set - generating a new one"
+  echo "WG_PRIVATE_KEY is not set - generating a new one"
   key=$(wg genkey)
 fi
 
-awk -v key="$key" '{gsub(/PrivateKey = <private key>/, "PrivateKey = " key); print}' wggvpn.conf >temp.conf && mv temp.conf wggvpn.conf
+sed -i "s/PrivateKey = <private key>/PrivateKey = ${WG_PRIVATE_KEY}/" wggvpn.conf
 
 chmod 600 wggvpn.conf
-squid -f ./squid.conf
 ./gnosis_vpn-server --config-file ./config.toml serve --periodically-run-cleanup --sync-wg-interface
