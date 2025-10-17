@@ -18,8 +18,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Install Nix
         uses: cachix/install-nix-action@v30
+
       - name: Use Nix Cache
         uses: cachix/cachix-action@v16
         with:
@@ -27,6 +29,14 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
         env:
           USER: runner
+
+      - name: Setup GCP
+        id: gcp
+        uses: hoprnet/hopr-workflows/actions/setup-gcp@12c56020e16036982e6cc529848edeedfc705865 # master
+        with:
+          google-credentials: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+          login-artifact-registry: 'true'
+
       - name: Build
         run: nix build .#gvpn -L
 
@@ -40,7 +50,7 @@ jobs:
           set -x
           pr_version=$(grep -E '^version\s*=' Cargo.toml | awk -F\" '{print $2}')-pr.${{ github.event.pull_request.number }}
           TAGS="${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ vars.DOCKER_IMAGE_NAME }}:${pr_version}"
-          if [[ -n "${{ steps.pr-labels.outputs.GITHUB_PR_LABEL_DEPLOY_DEV }}" ]]; then
+          if [[ -n "${GITHUB_PR_LABEL_DEPLOY_DEV}" ]]; then
             TAGS="$TAGS,${{ vars.DOCKER_IMAGE_REGISTRY }}/${{ vars.DOCKER_IMAGE_NAME }}:dev"
           fi
           echo "tags=$TAGS" | tee -a "$GITHUB_OUTPUT"
