@@ -92,7 +92,7 @@ jobs:
           fi
       - name: Build binary ${{ steps.vars.outputs.architecture}}
         run: |
-          nix build .#packages.${{ steps.vars.outputs.architecture}}.gpvn -L
+          nix build .#packages.${{ steps.vars.outputs.architecture}}.gvpn -L
           mkdir -p binaries
           cp ./result/bin/gnosis_vpn-server binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}
           if [[ "${{ inputs.version_type }}" == "commit" ]]; then
