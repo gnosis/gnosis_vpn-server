@@ -100,3 +100,46 @@ pub enum Command {
 pub fn parse() -> Cli {
     Cli::parse()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_parse_serve_command_flags() -> anyhow::Result<()> {
+        let cli = Cli::parse_from(["bin", "serve", "--periodically-run-cleanup", "--sync-wg-interface"]);
+        match cli.command {
+            Command::Serve {
+                periodically_run_cleanup,
+                sync_wg_interface,
+            } => {
+                assert!(periodically_run_cleanup);
+                assert!(sync_wg_interface);
+            }
+            _ => panic!("expected Serve command"),
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_parse_register_command_with_forced_ip_and_json() -> anyhow::Result<()> {
+        let cli = Cli::parse_from(["bin", "register", "pubkey", "10.0.0.2", "--json", "--persist-config"]);
+        match cli.command {
+            Command::Register {
+                public_key,
+                force_ip,
+                json,
+                persist_config,
+            } => {
+                assert_eq!(public_key, "pubkey");
+                assert_eq!(force_ip, Some(Ipv4Addr::new(10, 0, 0, 2)));
+                assert!(json);
+                assert!(persist_config);
+            }
+            _ => panic!("expected Register command"),
+        }
+
+        Ok(())
+    }
+}
