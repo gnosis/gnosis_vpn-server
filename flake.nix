@@ -98,19 +98,19 @@
             inherit src;
             strictDeps = true;
 
-            nativeBuildInputs =
-              [ pkgs.pkg-config ]
-              ++ lib.optionals pkgs.stdenv.isLinux [
-                pkgs.mold
-              ];
-            buildInputs =
-              [
-                pkgs.pkgsStatic.openssl
-              ]
-              ++ lib.optionals pkgs.stdenv.isDarwin [
-                # Additional darwin specific inputs can be set here
-                pkgs.libiconv
-              ];
+            nativeBuildInputs = [
+              pkgs.pkg-config
+            ]
+            ++ lib.optionals pkgs.stdenv.isLinux [
+              pkgs.mold
+            ];
+            buildInputs = [
+              pkgs.pkgsStatic.openssl
+            ]
+            ++ lib.optionals pkgs.stdenv.isDarwin [
+              # Additional darwin specific inputs can be set here
+              pkgs.libiconv
+            ];
 
             # Additional environment variables can be set directly
             # MY_CUSTOM_VAR = "some value";
@@ -182,17 +182,23 @@
               pname = "gnosis_vpn-server-test";
               cargoExtraArgs = "--all";
               src = srcFiles;
-            } // { runTests = true; }
+            }
+            // {
+              runTests = true;
+            }
           );
 
-           gvpn-debug = craneLib.buildPackage (
+          gvpn-debug = craneLib.buildPackage (
             individualCrateArgs
             // (builtins.getAttr targetForSystem targetCrateArgs)
             // {
               pname = "gnosis_vpn-server-debug";
               cargoExtraArgs = "--all";
               src = srcFiles;
-            } // { CARGO_PROFILE = "dev"; }
+            }
+            // {
+              CARGO_PROFILE = "dev";
+            }
           );
 
           treefmt = {
