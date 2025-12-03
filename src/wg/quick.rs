@@ -21,7 +21,7 @@ pub fn up(ops: &Ops) -> Result<(), Error> {
         .output()?;
 
     if !output.status.success() {
-        return Err(Error::Generic(format!("wg-quick up failed: {:?}", output)));
+        return Err(Error::Generic(format!("wg-quick up failed: {output:?}")));
     }
 
     if !output.stderr.is_empty() {
@@ -43,7 +43,7 @@ pub fn down(ops: &Ops) -> Result<(), Error> {
         .output()?;
 
     if !output.status.success() {
-        return Err(Error::Generic(format!("wg-quick down failed: {:?}", output)));
+        return Err(Error::Generic(format!("wg-quick down failed: {output:?}")));
     }
 
     if !output.stderr.is_empty() {
