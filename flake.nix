@@ -184,7 +184,7 @@
               src = srcFiles;
             }
             // {
-              runTests = true;
+              doCheck = true; runTests = true;
             }
           );
 
