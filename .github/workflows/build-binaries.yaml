@@ -69,7 +69,7 @@ jobs:
         uses: cachix/cachix-action@v15
         with:
           name: gnosis-vpn-server
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
         env:
           USER: runner
       - name: Get version
@@ -92,7 +92,7 @@ jobs:
           fi
       - name: Build binary ${{ steps.vars.outputs.architecture}}
         run: |
-          nix build .#gvpn-${{ steps.vars.outputs.architecture}} -L
+          nix build .#packages.${{ steps.vars.outputs.architecture}}.gpvn -L
           mkdir -p binaries
           cp ./result/bin/gnosis_vpn-server binaries/gnosis_vpn-server-${{ steps.vars.outputs.architecture}}
           if [[ "${{ inputs.version_type }}" == "commit" ]]; then

@@ -1,7 +1,8 @@
 [package]
 name = "gnosis_vpn-server"
 version = "0.1.2"
-edition = "2021"
+edition = "2024"
+license = "GPL-3.0"
 
 [dependencies]
 anyhow = "1.0"
