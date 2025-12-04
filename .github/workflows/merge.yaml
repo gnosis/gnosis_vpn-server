@@ -15,11 +15,13 @@ jobs:
       matrix:
         binary:
           - architecture: x86_64-linux
-            runner: ubuntu-latest
-          - architecture: aarch64-linux
-            runner: ubuntu-latest
-          - architecture: armv7l-linux
-            runner: ubuntu-latest
+            runner: ubuntu-24.04
+          # - architecture: aarch64-linux
+          #   runner: ubuntu-24.04
+          - architecture: aarch64-darwin
+            runner: macos-15
+          - architecture: x86_64-darwin
+            runner: macos-15
     name: Binary ${{ matrix.binary.architecture }}
     uses: ./.github/workflows/build-binaries.yaml
     with:
@@ -50,11 +52,11 @@ jobs:
             The binaries for this PR can be downloaded from:
             ```
             mkdir ./binaries
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-aarch64-linux --destination=./binaries --local-filename=gnosis_vpn-server-aarch64-linux
-
             gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-x86_64-linux --destination=./binaries --local-filename=gnosis_vpn-server-x86_64-linux
 
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-armv7l-linux --destination=./binaries --local-filename=gnosis_vpn-server-armv7l-linux
+            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-aarch64-darwin --destination=./binaries --local-filename=gnosis_vpn-server-aarch64-darwin
+
+            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-x86_64-darwin --destination=./binaries --local-filename=gnosis_vpn-server-x86_64-darwin
             ```
   cache-deps:
     name: Cache deps

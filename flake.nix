@@ -50,7 +50,7 @@
         "x86_64-linux"
         "aarch64-linux"
         "aarch64-darwin"
-        "armv7l-linux"
+        "x86_64-darwin"
       ];
       perSystem =
         {
@@ -73,8 +73,8 @@
           systemTargets = {
             "x86_64-linux" = "x86_64-unknown-linux-musl";
             "aarch64-linux" = "aarch64-unknown-linux-musl";
-            "armv7l-linux" = "armv7-unknown-linux-gnueabihf";
             "aarch64-darwin" = "aarch64-apple-darwin";
+            "x86_64-darwin" = "x86_64-apple-darwin";
           };
 
           targetForSystem = builtins.getAttr system systemTargets;
@@ -147,9 +147,9 @@
               CARGO_BUILD_TARGET = "aarch64-unknown-linux-musl";
               CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static -C link-arg=-fuse-ld=mold";
             };
-            "armv7-unknown-linux-gnueabihf" = {
-              CARGO_PROFILE = "armv7-unknown-linux-gnueabihf";
-              CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static -C link-arg=-fuse-ld=mold";
+            "x86_64-apple-darwin" = {
+              CARGO_PROFILE = "intelmac";
+              CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
             };
             "aarch64-apple-darwin" = {
               CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
