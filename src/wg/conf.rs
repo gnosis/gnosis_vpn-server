@@ -46,8 +46,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
 
     if !output_ip_addr.status.success() {
         return Err(Error::Generic(format!(
-            "ip -f inet addr show failed: {:?}",
-            output_ip_addr
+            "ip -f inet addr show failed: {output_ip_addr:?}"
         )));
     }
 
@@ -62,7 +61,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
     let output_wg = Command::new("wg").arg("showconf").arg(interface).output()?;
 
     if !output_wg.status.success() {
-        return Err(Error::Generic(format!("wg showconf failed: {:?}", output_wg)));
+        return Err(Error::Generic(format!("wg showconf failed: {output_wg:?}")));
     }
 
     if !output_wg.stderr.is_empty() {
@@ -93,7 +92,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
 
     // Add interface address into the config
     if let Some(index) = lines.iter().position(|line| line == "[Interface]") {
-        let line_addr = format!("Address = {}", interface_address);
+        let line_addr = format!("Address = {interface_address}");
         lines.insert(index + 1, line_addr);
     }
 

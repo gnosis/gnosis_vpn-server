@@ -34,7 +34,7 @@ pub fn dump(interface: &str) -> Result<Dump, Error> {
     let output = Command::new("wg").arg("show").arg(interface).arg("dump").output()?;
 
     if !output.status.success() {
-        return Err(Error::Generic(format!("wg show dump failed: {:?}", output)));
+        return Err(Error::Generic(format!("wg show dump failed: {output:?}")));
     }
 
     if !output.stderr.is_empty() {
@@ -47,7 +47,7 @@ pub fn dump(interface: &str) -> Result<Dump, Error> {
     let content = match String::from_utf8(output.stdout) {
         Ok(content) => content,
         Err(err) => {
-            return Err(Error::Generic(format!("error parsing wg show output: {}", err)));
+            return Err(Error::Generic(format!("error parsing wg show output: {err}")));
         }
     };
 
@@ -110,8 +110,7 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
                 Ok(ip) => ip,
                 Err(err) => {
                     return Err(Error::Generic(format!(
-                        "unable to parse ip from allowed_ips[{}]: {}",
-                        allowed_ips, err
+                        "unable to parse ip from allowed_ips[{allowed_ips}]: {err}"
                     )))
                 }
             };

@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&status)?);
                     } else {
-                        println!("{:?}", status);
+                        println!("{status:?}");
                     }
                 }
                 Err(err) => {
@@ -119,7 +119,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{:?}", err);
+                        println!("{err:?}");
                     }
                     process::exit(1);
                 }
@@ -133,7 +133,7 @@ async fn main() -> Result<()> {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&status)?);
                     } else {
-                        println!("{:?}", status);
+                        println!("{status:?}");
                     }
                 }
                 Err(err) => {
@@ -141,7 +141,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{:?}", err);
+                        println!("{err:?}");
                     }
                     process::exit(1);
                 }
@@ -171,7 +171,7 @@ async fn main() -> Result<()> {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&register)?);
                     } else {
-                        println!("{:?}", register);
+                        println!("{register:?}");
                     }
                 }
                 Err(err) => {
@@ -179,7 +179,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{:?}", err);
+                        println!("{err:?}");
                     }
                     process::exit(1);
                 }
@@ -209,7 +209,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{:?}", err);
+                        println!("{err:?}");
                     }
                     process::exit(1);
                 }
@@ -232,7 +232,7 @@ async fn main() -> Result<()> {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&remove_expired)?);
                     } else {
-                        println!("{:?}", remove_expired);
+                        println!("{remove_expired:?}");
                     }
                 }
                 Err(err) => {
@@ -240,7 +240,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{:?}", err);
+                        println!("{err:?}");
                     }
                     process::exit(1);
                 }
@@ -259,7 +259,7 @@ async fn main() -> Result<()> {
                     if json {
                         println!("{}", serde_json::to_string_pretty(&remove_never_connected)?);
                     } else {
-                        println!("{:?}", remove_never_connected);
+                        println!("{remove_never_connected:?}");
                     }
                 }
                 Err(err) => {
@@ -267,7 +267,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{:?}", err);
+                        println!("{err:?}");
                     }
                     process::exit(1);
                 }
@@ -304,16 +304,16 @@ async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
                 }
             }
             Err(err) => {
-                tracing::error!("Error during clients cleanup: {:?}", err);
+                tracing::error!("Error during clients cleanup: {err:?}");
                 once_not_connected = Vec::new();
             }
         }
         match remove::expired(ops, &None) {
             Ok(RemoveExpired { total, .. }) => {
-                tracing::info!("Removed {} expired clients", total);
+                tracing::info!("Removed {total} expired clients");
             }
             Err(err) => {
-                tracing::error!("Error during expired clients cleanup: {:?}", err);
+                tracing::error!("Error during expired clients cleanup: {err:?}");
             }
         }
     }

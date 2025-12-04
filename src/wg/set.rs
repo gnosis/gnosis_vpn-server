@@ -21,7 +21,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
         .arg("peer")
         .arg(public_key)
         .arg("allowed-ips")
-        .arg(format!("{}/32", ip))
+        .arg(format!("{ip}/32"))
         .output()?;
 
     if !output_set.stderr.is_empty() {
@@ -34,14 +34,14 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
     }
 
     if !output_set.status.success() {
-        return Err(Error::Generic(format!("wg set peer failed: {:?}", output_set)));
+        return Err(Error::Generic(format!("wg set peer failed: {output_set:?}")));
     }
 
     let output_route = Command::new("ip")
         .arg("-4")
         .arg("route")
         .arg("add")
-        .arg(format!("{}/32", ip))
+        .arg(format!("{ip}/32"))
         .arg("dev")
         .arg(interface)
         .output()?;
@@ -56,7 +56,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
     }
 
     if !output_route.status.success() {
-        return Err(Error::Generic(format!("ip route add failed: {:?}", output_route)));
+        return Err(Error::Generic(format!("ip route add failed: {output_route:?}")));
     }
 
     Ok(())
@@ -80,7 +80,7 @@ pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), Error> {
     }
 
     if !output_set.status.success() {
-        return Err(Error::Generic(format!("wg remove peer failed: {:?}", output_set)));
+        return Err(Error::Generic(format!("wg remove peer failed: {output_set:?}")));
     }
 
     let output_route = Command::new("ip")
@@ -100,7 +100,7 @@ pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), Error> {
     }
 
     if !output_route.status.success() {
-        return Err(Error::Generic(format!("ip route del failed: {:?}", output_route)));
+        return Err(Error::Generic(format!("ip route del failed: {output_route:?}")));
     }
 
     Ok(())
