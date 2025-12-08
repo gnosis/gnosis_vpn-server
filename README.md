@@ -15,6 +15,18 @@ client_handshake_timeout_s = 300
 The server private key will be taken from the specified WireGuard configuration file.
 PostUp and PostDown hooks will be taken as is.
 
+Sample wg0.conf:
+
+```wg0.conf
+[Interface]
+Address = 10.128.0.1/9
+PrivateKey = <somekey>
+ListenPort = 51820
+MTU = 1500
+PostUp = iptables -t nat -A POSTROUTING -s 10.128.0.0/9 -o ens3 -j MASQUERADE
+PostDown = iptables -t nat -D POSTROUTING -s 10.128.0.0/9 -o ens3 -j MASQUERADE
+```
+
 ### User Statistics
 
 Determine user statistics, run as root:
