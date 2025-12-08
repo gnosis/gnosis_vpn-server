@@ -1,5 +1,5 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 use serde::Serialize;
 use thiserror::Error;
 

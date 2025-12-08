@@ -111,7 +111,7 @@ fn peers_from_lines(lines: &Vec<&str>) -> Result<Vec<Peer>, Error> {
                 Err(err) => {
                     return Err(Error::Generic(format!(
                         "unable to parse ip from allowed_ips[{allowed_ips}]: {err}"
-                    )))
+                    )));
                 }
             };
 

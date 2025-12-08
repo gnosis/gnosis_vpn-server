@@ -1,6 +1,6 @@
-use prometheus::{register_int_gauge, Encoder, IntGauge, TextEncoder};
-use rocket::http::ContentType;
+use prometheus::{Encoder, IntGauge, TextEncoder, register_int_gauge};
 use rocket::State;
+use rocket::http::ContentType;
 use thiserror::Error;
 
 use crate::api_error::{self, ApiError};
