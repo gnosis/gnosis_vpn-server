@@ -12,6 +12,9 @@ wireguard_config_path = "/etc/wireguard/wg0.conf"
 client_handshake_timeout_s = 300
 ```
 
+The server private key will be taken from the specified WireGuard configuration file.
+PostUp and PostDown hooks will be taken as is.
+
 ### User Statistics
 
 Determine user statistics, run as root:
