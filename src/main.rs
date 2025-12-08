@@ -161,10 +161,8 @@ async fn main() -> Result<()> {
                 RunVariant::GenerateIP(rand)
             };
             let register = register::run(&ops, variant, &public_key);
-            if persist_config {
-                if let Err(err) = conf::save_file(&ops) {
-                    tracing::error!(?err, "Persisting interface state to config failed");
-                }
+            if persist_config && let Err(err) = conf::save_file(&ops) {
+                tracing::error!(?err, "Persisting interface state to config failed");
             }
             match register {
                 Ok(register) => {
@@ -192,10 +190,8 @@ async fn main() -> Result<()> {
             persist_config,
         } => {
             let unregister = unregister::run(&ops, &public_key);
-            if persist_config {
-                if let Err(err) = conf::save_file(&ops) {
-                    tracing::error!(?err, "Persisting interface state to config failed");
-                }
+            if persist_config && let Err(err) = conf::save_file(&ops) {
+                tracing::error!(?err, "Persisting interface state to config failed");
             }
             match unregister {
                 Ok(_) => {
@@ -222,10 +218,8 @@ async fn main() -> Result<()> {
             persist_config,
         } => {
             let remove_expired = remove::expired(&ops, &client_handshake_timeout_s);
-            if persist_config {
-                if let Err(err) = conf::save_file(&ops) {
-                    tracing::error!(?err, "Persisting interface state to config failed");
-                }
+            if persist_config && let Err(err) = conf::save_file(&ops) {
+                tracing::error!(?err, "Persisting interface state to config failed");
             }
             match remove_expired {
                 Ok(remove_expired) => {
@@ -249,10 +243,8 @@ async fn main() -> Result<()> {
 
         Command::RemoveNeverConnected { json, persist_config } => {
             let remove_never_connected = remove::never_connected(&ops);
-            if persist_config {
-                if let Err(err) = conf::save_file(&ops) {
-                    tracing::error!(?err, "Persisting interface state to config failed");
-                }
+            if persist_config && let Err(err) = conf::save_file(&ops) {
+                tracing::error!(?err, "Persisting interface state to config failed");
             }
             match remove_never_connected {
                 Ok(remove_never_connected) => {
