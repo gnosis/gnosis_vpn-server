@@ -37,9 +37,9 @@ async fn main() -> Result<()> {
     let args = cli::parse();
 
     let config_path = fs::canonicalize(args.config_file).context("failed locating config file")?;
-    let content = fs::read_to_string(config_path).context("failed reading config file")?;
+    let content = fs::read_to_string(&config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
-    let ops = Ops::try_from(config)?;
+    let ops = Ops::from_config(config, &config_path)?;
     let metrics = Metrics::create().context("failed initializing metrics")?;
 
     match args.command {
@@ -60,6 +60,7 @@ async fn main() -> Result<()> {
                 r#"
                 address = "{address}"
                 port = {port}
+                cli_colors = false
                 "#,
                 address = ops.rocket_address,
                 port = ops.rocket_port

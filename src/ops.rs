@@ -1,6 +1,8 @@
+use anyhow::Context;
+
 use std::fs;
 use std::net::{IpAddr, Ipv4Addr};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use crate::config::Config;
@@ -22,13 +24,17 @@ const DEFAULT_ROCKET_PORT: u16 = 8000;
 const DEFAULT_CLIENT_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 const DEFAULT_CLIENT_CLEANUP_INTERVAL: Duration = Duration::from_secs(3 * 60);
 
-impl TryFrom<Config> for Ops {
-    type Error = anyhow::Error;
-
-    fn try_from(config: Config) -> Result<Self, Self::Error> {
+impl Ops {
+    pub fn from_config(config: Config, config_path: &Path) -> Result<Self, anyhow::Error> {
         let rocket_address = config.endpoint.map(|addr| addr.ip()).unwrap_or(DEFAULT_ROCKET_ADDRESS);
         let rocket_port = config.endpoint.map(|addr| addr.port()).unwrap_or(DEFAULT_ROCKET_PORT);
-        let wg_config = fs::canonicalize(&config.wireguard_config_path)?;
+        let config_parent = config_path.parent().ok_or(anyhow::anyhow!(
+            "Config path has no parent directory: {:?}",
+            config_path
+        ))?;
+        let wg_config_path = config_parent.join(&config.wireguard_config_path);
+        println!("WireGuard config path: {:?}", wg_config_path);
+        let wg_config = fs::canonicalize(wg_config_path).context("Canonicalizing WireGuard config path")?;
         let interface_name = wg_config
             .file_stem()
             .map(|s| s.to_string_lossy().to_string())
