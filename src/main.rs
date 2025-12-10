@@ -179,7 +179,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{err:?}");
+                        println!("{err}");
                     }
                     process::exit(1);
                 }

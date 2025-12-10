@@ -1,12 +1,17 @@
 use std::net::Ipv4Addr;
 use std::process::Command;
+use thiserror::Error;
 
 use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::peer::Peer;
 
-pub type Error = shell_command_ext::Error;
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Command failed: {0}")]
+    Command(#[from] shell_command_ext::Error),
+}
 
-pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), shell_command_ext::Error> {
+pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), Error> {
     // add peer to interface
     Command::new("wg")
         .arg("set")
@@ -30,7 +35,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), 
     Ok(())
 }
 
-pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), shell_command_ext::Error> {
+pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), Error> {
     // remove peer from interface
     Command::new("wg")
         .arg("set")

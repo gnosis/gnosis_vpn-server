@@ -27,9 +27,9 @@ pub enum Error {
     WrongNumberOfFieldsInServerLine,
     #[error("Wrong number of fields in peer line")]
     WrongNumberOfFieldsInPeerLine,
-    #[error("IO: {0}")]
+    #[error("IO error: {0}")]
     IO(#[from] IOError),
-    #[error("Command: {0}")]
+    #[error("Command failed: {0}")]
     Command(#[from] shell_command_ext::Error),
 }
 
