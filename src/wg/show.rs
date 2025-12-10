@@ -4,6 +4,7 @@ use std::io::Error as IOError;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::process::Command;
 
+use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::peer::Peer;
 
 #[derive(Debug)]
@@ -20,7 +21,7 @@ pub struct Dump {
 pub enum Error {
     #[error("Generic error: {0}")]
     Generic(String),
-    #[error("IO error: {0}")]
+    #[error(transparent)]
     IO(#[from] IOError),
     #[error("No output lines found")]
     NoOutputLines,
@@ -28,30 +29,13 @@ pub enum Error {
     WrongNumberOfFieldsInServerLine,
     #[error("Wrong number of fields in peer line")]
     WrongNumberOfFieldsInPeerLine,
+    #[error(transparent)]
+    Command(#[from] shell_command_ext::Error),
 }
 
 pub fn dump(interface: &str) -> Result<Dump, Error> {
-    let output = Command::new("wg").arg("show").arg(interface).arg("dump").output()?;
-
-    if !output.status.success() {
-        return Err(Error::Generic(format!("wg show dump failed: {output:?}")));
-    }
-
-    if !output.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
-            "wg show dump"
-        );
-    }
-
-    let content = match String::from_utf8(output.stdout) {
-        Ok(content) => content,
-        Err(err) => {
-            return Err(Error::Generic(format!("error parsing wg show output: {err}")));
-        }
-    };
-
-    let output_lines: Vec<&str> = content.split('\n').collect();
+    let output = Command::new("wg").arg("show").arg(interface).arg("dump").run_stdout()?;
+    let output_lines: Vec<&str> = output.split('\n').collect();
     let lines: Vec<&str> = output_lines
         .iter()
         .map(|l| l.trim())

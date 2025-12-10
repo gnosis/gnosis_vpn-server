@@ -6,6 +6,7 @@ use std::io::Write;
 use std::process::Command;
 
 use crate::ops::Ops;
+use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::peer::Peer;
 
 #[derive(Debug)]
@@ -22,73 +23,44 @@ pub struct Dump {
 pub enum Error {
     #[error("Generic error: {0}")]
     Generic(String),
-    #[error("IO error: {0}")]
+    #[error(transparent)]
     IO(#[from] IOError),
     #[error("No interface found")]
     NoInterface,
     #[error("Failed parsing interface address")]
     NoAddress,
+    #[error(transparent)]
+    Command(#[from] shell_command_ext::Error),
 }
 
 pub fn save_file(ops: &Ops) -> Result<(), Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-
-    let output_ip_addr = Command::new("ip")
+    let ip_addr_stdout = Command::new("ip")
         .arg("-f")
         .arg("inet")
         .arg("addr")
         .arg("show")
-        .arg(interface)
-        .output()?;
+        .arg(ops.interface_name)
+        .run_stdout()?;
 
-    if !output_ip_addr.status.success() {
-        return Err(Error::Generic(format!(
-            "ip -f inet addr show failed: {output_ip_addr:?}"
-        )));
-    }
-
-    if !output_ip_addr.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output_ip_addr.stderr).to_string(),
-            interface,
-            "ip -f inet addr show"
-        )
-    }
-
-    let output_wg = Command::new("wg").arg("showconf").arg(interface).output()?;
-
-    if !output_wg.status.success() {
-        return Err(Error::Generic(format!("wg showconf failed: {output_wg:?}")));
-    }
-
-    if !output_wg.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output_wg.stderr).to_string(),
-            interface,
-            "wg showconf"
-        )
-    }
+    let wg_stdout = Command::new("wg")
+        .arg("showconf")
+        .arg(ops.interface_name)
+        .run_stdout()?;
 
     // Prepend with maintainer information
     let prepend_str = format!("# Maintained by {}\n\n", env!("CARGO_PKG_NAME"));
     let prepend = prepend_str.as_bytes();
-
-    let ip_addr_stdout = String::from_utf8_lossy(&output_ip_addr.stdout);
 
     let interface_address = ip_addr_stdout
         .split('\n')
         .find(|line| line.contains("inet "))
         .and_then(|line| line.trim().split(' ').nth(1))
         .ok_or_else(|| {
-            tracing::error!(?interface, stdout = ?ip_addr_stdout, "Failed to parse address");
+            tracing::error!(ops.interface_name, stdout = ?ip_addr_stdout, "Failed to parse address");
             Error::NoAddress
         })?;
 
-    let stdout_str = String::from_utf8_lossy(&output_wg.stdout);
-    let mut lines: Vec<String> = stdout_str.lines().map(String::from).collect();
+    let mut lines: Vec<String> = wg_stdout.lines().map(String::from).collect();
 
     // Add interface address into the config
     if let Some(index) = lines.iter().position(|line| line == "[Interface]") {
@@ -102,7 +74,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
     let mut content = Vec::with_capacity(prepend.len() + modified_output_bytes.len());
     content.extend_from_slice(prepend);
     content.extend_from_slice(modified_output_bytes);
-    let mut f = File::create(&ops.wg_interface_config)?;
+    let mut f = File::create(&ops.wg_config)?;
     f.write_all(&content)?;
     Ok(())
 }
