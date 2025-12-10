@@ -16,11 +16,9 @@ pub struct Metrics {
 pub enum Error {
     #[error("Prometheus error: {0}")]
     Prometheus(#[from] prometheus::Error),
-    #[error("UTF-8 conversion error: {0}")]
+    #[error("UTF-8 Conversion failed: {0}")]
     Utf8Conversion(#[from] std::string::FromUtf8Error),
-    #[error("No interface found")]
-    NoInterface,
-    #[error("Error during wg show: {0}")]
+    #[error("wg show error: {0}")]
     WgShow(#[from] ShowError),
 }
 
@@ -40,8 +38,7 @@ impl Metrics {
 }
 
 pub fn calculate_registered_clients(ops: &Ops) -> Result<i64, Error> {
-    let interface = ops.interface().ok_or(Error::NoInterface)?;
-    let dump = show::dump(interface)?;
+    let dump = show::dump(ops.interface_name.as_str())?;
     Ok(dump.peers.len() as i64)
 }
 

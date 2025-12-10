@@ -1,107 +1,57 @@
-use thiserror::Error;
-
-use std::io::Error as IOError;
 use std::net::Ipv4Addr;
 use std::process::Command;
+use thiserror::Error;
 
+use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::peer::Peer;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Generic error: {0}")]
-    Generic(String),
-    #[error("IO error: {0}")]
-    IO(#[from] IOError),
+    #[error("Command failed: {0}")]
+    Command(#[from] shell_command_ext::Error),
 }
 
 pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), Error> {
-    let output_set = Command::new("wg")
+    // add peer to interface
+    Command::new("wg")
         .arg("set")
         .arg(interface)
         .arg("peer")
         .arg(public_key)
         .arg("allowed-ips")
         .arg(format!("{ip}/32"))
-        .output()?;
+        .run()?;
 
-    if !output_set.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output_set.stderr).to_string(),
-            interface,
-            ?ip,
-            "wg set peer"
-        );
-    }
-
-    if !output_set.status.success() {
-        return Err(Error::Generic(format!("wg set peer failed: {output_set:?}")));
-    }
-
-    let output_route = Command::new("ip")
+    // add routing for added peer
+    Command::new("ip")
         .arg("-4")
         .arg("route")
         .arg("add")
         .arg(format!("{ip}/32"))
         .arg("dev")
         .arg(interface)
-        .output()?;
-
-    if !output_route.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output_route.stderr).to_string(),
-            interface,
-            ?ip,
-            "ip route add"
-        );
-    }
-
-    if !output_route.status.success() {
-        return Err(Error::Generic(format!("ip route add failed: {output_route:?}")));
-    }
+        .run()?;
 
     Ok(())
 }
 
 pub fn remove_peer(interface: &str, peer: &Peer) -> Result<(), Error> {
-    let output_set = Command::new("wg")
+    // remove peer from interface
+    Command::new("wg")
         .arg("set")
         .arg(interface)
         .arg("peer")
         .arg(peer.public_key.clone())
         .arg("remove")
-        .output()?;
+        .run()?;
 
-    if !output_set.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output_set.stderr).to_string(),
-            interface,
-            "wg set peer"
-        )
-    }
-
-    if !output_set.status.success() {
-        return Err(Error::Generic(format!("wg remove peer failed: {output_set:?}")));
-    }
-
-    let output_route = Command::new("ip")
+    // delete routing for removed peer
+    Command::new("ip")
         .arg("-4")
         .arg("route")
         .arg("del")
         .arg(peer.ip.to_string())
-        .output()?;
-
-    if !output_route.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output_route.stderr).to_string(),
-            interface,
-            ?peer,
-            "ip route del"
-        );
-    }
-
-    if !output_route.status.success() {
-        return Err(Error::Generic(format!("ip route del failed: {output_route:?}")));
-    }
+        .run()?;
 
     Ok(())
 }

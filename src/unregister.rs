@@ -15,13 +15,11 @@ pub struct Unregister {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("No interface found")]
-    NoInterface,
     #[error("Peer not found")]
     PeerNotFound,
-    #[error("Error during wg set: {0}")]
+    #[error("wg set error: {0}")]
     WgSet(#[from] set::Error),
-    #[error("Error during wg show: {0}")]
+    #[error("wg show error: {0}")]
     WgShow(#[from] show::Error),
 }
 
@@ -59,14 +57,10 @@ pub fn api(input: Json<Input>, sync_wg_interface: &State<bool>, ops: &State<Ops>
 }
 
 pub fn run(ops: &Ops, public_key: &str) -> Result<Unregister, Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     let peer = res_peer.ok_or(Error::PeerNotFound)?;
-    set::remove_peer(interface, peer).map_err(Error::WgSet)?;
+    set::remove_peer(ops.interface_name.as_str(), peer).map_err(Error::WgSet)?;
     Ok(Unregister {
         public_key: public_key.to_string(),
     })

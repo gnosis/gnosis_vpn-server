@@ -1,58 +1,28 @@
 use thiserror::Error;
 
-use std::io::Error as IOError;
 use std::process::Command;
 
 use crate::ops::Ops;
+use crate::shell_command_ext::{self, ShellCommandExt};
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Generic error: {0}")]
-    Generic(String),
-    #[error("IO error: {0}")]
-    IO(#[from] IOError),
+    #[error("Command failed: {0}")]
+    Command(#[from] shell_command_ext::Error),
 }
 
 pub fn up(ops: &Ops) -> Result<(), Error> {
-    let interface_file = ops.wg_interface_config.clone();
-    let output = Command::new("wg-quick")
+    Command::new("wg-quick")
         .arg("up")
-        .arg(interface_file.clone())
-        .output()?;
-
-    if !output.status.success() {
-        return Err(Error::Generic(format!("wg-quick up failed: {output:?}")));
-    }
-
-    if !output.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
-            ?interface_file,
-            "wg-quick up"
-        )
-    }
-
+        .arg(ops.wg_config.to_string_lossy().to_string())
+        .run()?;
     Ok(())
 }
 
 pub fn down(ops: &Ops) -> Result<(), Error> {
-    let interface_file = ops.wg_interface_config.clone();
-    let output = Command::new("wg-quick")
+    Command::new("wg-quick")
         .arg("down")
-        .arg(interface_file.clone())
-        .output()?;
-
-    if !output.status.success() {
-        return Err(Error::Generic(format!("wg-quick down failed: {output:?}")));
-    }
-
-    if !output.stderr.is_empty() {
-        tracing::warn!(
-            stderr = String::from_utf8_lossy(&output.stderr).to_string(),
-            ?interface_file,
-            "wg-quick down"
-        )
-    }
-
+        .arg(ops.wg_config.to_string_lossy().to_string())
+        .run()?;
     Ok(())
 }

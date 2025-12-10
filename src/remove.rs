@@ -28,11 +28,9 @@ pub struct RemoveDisconnected {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("No interface found")]
-    NoInterface,
-    #[error("Error during wg show: {0}")]
+    #[error("wg show error: {0}")]
     WgShow(#[from] show::Error),
-    #[error("Error unregistering: {0}")]
+    #[error("Unregister failed: {0}")]
     Unregister(#[from] unregister::Error),
     #[error("System time error: {0}")]
     SystemTime(#[from] SystemTimeError),
@@ -40,11 +38,7 @@ pub enum Error {
 
 pub fn previously_disconnected(ops: &Ops, once_not_connected: &[String]) -> Result<RemoveDisconnected, Error> {
     // determine never connected
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let public_keys = dump
         .peers
         .iter()
@@ -69,14 +63,10 @@ pub fn previously_disconnected(ops: &Ops, once_not_connected: &[String]) -> Resu
 }
 
 pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
     let client_handshake_timeout = overwrite_client_handshake_timeout_s
         .map(Duration::from_secs)
         .unwrap_or(ops.client_handshake_timeout);
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let (hand_shaked_peers, bad_peers) = dump
         .peers
         .iter()
@@ -113,11 +103,7 @@ pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) ->
 }
 
 pub fn never_connected(ops: &Ops) -> Result<RemoveNeverConnected, Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let public_keys = dump
         .peers
         .iter()

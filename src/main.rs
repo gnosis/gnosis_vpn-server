@@ -27,6 +27,7 @@ mod metrics;
 mod ops;
 mod register;
 mod remove;
+mod shell_command_ext;
 mod status;
 mod unregister;
 mod wg;
@@ -34,11 +35,13 @@ mod wg;
 #[rocket::main]
 async fn main() -> Result<()> {
     let args = cli::parse();
+    // install global collector configured based on RUST_LOG env var.
+    tracing_subscriber::fmt::init();
 
-    let config_path = args.config_file;
-    let content = fs::read_to_string(config_path).context("failed reading config file")?;
+    let config_path = fs::canonicalize(args.config_file).context("failed locating config file")?;
+    let content = fs::read_to_string(&config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
-    let ops = Ops::from(config);
+    let ops = Ops::from_config(config, &config_path)?;
     let metrics = Metrics::create().context("failed initializing metrics")?;
 
     match args.command {
@@ -46,8 +49,6 @@ async fn main() -> Result<()> {
             periodically_run_cleanup,
             sync_wg_interface,
         } => {
-            // install global collector configured based on RUST_LOG env var.
-            tracing_subscriber::fmt::init();
             tracing::info!(
                 "serving {name} v{version} on {ip}:{port}",
                 name = env!("CARGO_PKG_NAME"),
@@ -59,6 +60,7 @@ async fn main() -> Result<()> {
                 r#"
                 address = "{address}"
                 port = {port}
+                cli_colors = false
                 "#,
                 address = ops.rocket_address,
                 port = ops.rocket_port
@@ -177,7 +179,7 @@ async fn main() -> Result<()> {
                         let output = json!({"error": err.to_string()});
                         println!("{}", serde_json::to_string_pretty(&output)?);
                     } else {
-                        println!("{err:?}");
+                        println!("{err}");
                     }
                     process::exit(1);
                 }

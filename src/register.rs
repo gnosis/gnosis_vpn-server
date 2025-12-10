@@ -21,15 +21,13 @@ pub struct Register {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("No interface found")]
-    NoInterface,
     #[error("No free IP available")]
     NoFreeIp,
     #[error("IP address already taken")]
     IpAlreadyTaken,
-    #[error("Error during wg show: {0}")]
+    #[error("wg show error: {0}")]
     WgShow(#[from] show::Error),
-    #[error("Error during wg set: {0}")]
+    #[error("wg set error: {0}")]
     WgSet(#[from] set::Error),
 }
 
@@ -76,11 +74,7 @@ pub fn api(
 }
 
 pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register, Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     if let Some(peer) = res_peer {
         return Ok(Register {
@@ -108,7 +102,7 @@ pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register,
         }
     };
 
-    set::add_peer(interface, public_key, &ip).map_err(Error::WgSet)?;
+    set::add_peer(ops.interface_name.as_str(), public_key, &ip).map_err(Error::WgSet)?;
     Ok(Register {
         public_key: public_key.to_string(),
         ip,
