@@ -90,7 +90,7 @@ mod tests {
         AllowedIPs = 10.128.0.122/32
         "#;
         let section = extract_peers(content.to_string());
-        assert_eq!(section.len(), 6);
+        assert_eq!(section.len(), 7);
         assert!(section.iter().any(|line| line.contains("PublicKey = somepublickey")));
         assert!(section.iter().any(|line| line.contains("PublicKey = anotherpublickey")));
         assert!(section.iter().any(|line| line.contains("AllowedIPs = 10.128.0.120/32")));

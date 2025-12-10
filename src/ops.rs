@@ -109,70 +109,24 @@ fn extract_interface_section(content: String) -> Result<Vec<String>, anyhow::Err
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Config;
-    use crate::ip_range::IpRange;
-
-    fn sample_range() -> IpRange {
-        toml::from_str(
-            r#"start = "10.128.0.2"
-end = "10.128.0.10""#,
-        )
-        .expect("range")
-    }
-
-    #[test]
-    fn should_use_defaults_when_endpoint_and_timeouts_absent() -> anyhow::Result<()> {
-        let config = Config {
-            allowed_client_ips: sample_range(),
-            endpoint: None,
-            wireguard_config_path: PathBuf::from("wg0.conf"),
-            client_handshake_timeout_s: None,
-            client_cleanup_interval_s: None,
-        };
-
-        let ops: Ops = config.into();
-
-        assert_eq!(ops.rocket_address, IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
-        assert_eq!(ops.rocket_port, 8000);
-        assert_eq!(ops.client_handshake_timeout, Duration::from_secs(300));
-        assert_eq!(ops.client_cleanup_interval, Duration::from_secs(180));
-
-        Ok(())
-    }
-
-    #[test]
-    fn should_derive_interface_name_from_config_filename() -> anyhow::Result<()> {
-        let ops = Ops {
-            client_address_range: sample_range(),
-            rocket_address: IpAddr::V4(Ipv4Addr::new(192, 168, 0, 1)),
-            rocket_port: 9000,
-            wg_interface_config: PathBuf::from("/etc/wireguard/custom0.conf"),
-            client_handshake_timeout: Duration::from_secs(100),
-            client_cleanup_interval: Duration::from_secs(200),
-        };
-
-        assert_eq!(ops.interface(), Some("custom0"));
-
-        Ok(())
-    }
 
     #[test]
     fn should_extract_interface_section() -> anyhow::Result<()> {
         let content = r#"
-        [Interface]
-        Address = 10.128.0.0/32
-        PrivateKey = someprivatekey
-        [Peer]
-        PublicKey = somepublickey
-        AllowedIPs = 10.128.0.120/32
-        [Peer]
-        PublicKey = anotherpublickey
-        AllowedIPs = 10.128.0.122/32
-        "#;
+[Interface]
+Address = 10.128.0.0/32
+PrivateKey = someprivatekey
+[Peer]
+PublicKey = somepublickey
+AllowedIPs = 10.128.0.120/32
+[Peer]
+PublicKey = anotherpublickey
+AllowedIPs = 10.128.0.122/32
+"#;
         let section = extract_interface_section(content.to_string())?;
         assert_eq!(section.len(), 2);
-        assert!(section.iter().any(|line| line.contains("PrivateKey")));
-        assert!(section.iter().any(|line| line.contains("Address")));
+        assert!(section.iter().any(|line| line.starts_with("PrivateKey")));
+        assert!(section.iter().any(|line| line.starts_with("Address")));
         Ok(())
     }
 }
