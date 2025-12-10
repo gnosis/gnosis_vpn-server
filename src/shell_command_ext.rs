@@ -22,8 +22,8 @@ impl ShellCommandExt for Command {
     /// See tokio's output behaviour: https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.output
     fn run(&mut self) -> Result<(), Error> {
         let output = self.output()?;
-        let stderrempty = output.stderr.is_empty();
-        match (stderrempty, output.status) {
+        let stderr_empty = output.stderr.is_empty();
+        match (stderr_empty, output.status) {
             (true, status) if status.success() => Ok(()),
             (false, status) if status.success() => {
                 let stderr = String::from_utf8_lossy(&output.stderr);
@@ -47,9 +47,9 @@ impl ShellCommandExt for Command {
 }
 
 pub fn stdout_from_output(cmd: String, output: Output) -> Result<String, Error> {
-    let stderrempty = output.stderr.is_empty();
+    let stderr_empty = output.stderr.is_empty();
     let stdout = String::from_utf8_lossy(&output.stdout);
-    match (stderrempty, output.status) {
+    match (stderr_empty, output.status) {
         (true, status) if status.success() => Ok(stdout.trim().to_string()),
         (false, status) if status.success() => {
             let stderr = String::from_utf8_lossy(&output.stderr);

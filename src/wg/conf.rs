@@ -29,7 +29,7 @@ pub enum Error {
 
 pub fn save_file(ops: &Ops) -> Result<(), Error> {
     // wg showconf omits parts that wg-quick needs
-    // in order to keep existing values, the inteface section comes from the on disk wg config
+    // in order to keep existing values, the interface section comes from the on disk wg config
     let wg_stdout = Command::new("wg")
         .arg("showconf")
         .arg(ops.interface_name.clone())
@@ -77,7 +77,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_extract_interface_section() -> anyhow::Result<()> {
+    fn should_extract_peers() -> anyhow::Result<()> {
         let content = r#"
             [Interface]
             Address = 10.128.0.0/32
@@ -95,9 +95,9 @@ mod tests {
         assert!(section.iter().any(|line| line.contains("PublicKey = anotherpublickey")));
         assert!(section.iter().any(|line| line.contains("AllowedIPs = 10.128.0.120/32")));
         assert!(section.iter().any(|line| line.contains("AllowedIPs = 10.128.0.122/32")));
-        assert!(section.iter().any(|line| !line.contains("[Interface]")));
-        assert!(section.iter().any(|line| !line.contains("Address =")));
-        assert!(section.iter().any(|line| !line.contains("PrivateKey =")));
+        assert!(section.iter().all(|line| !line.contains("[Interface]")));
+        assert!(section.iter().all(|line| !line.contains("Address =")));
+        assert!(section.iter().all(|line| !line.contains("PrivateKey =")));
         Ok(())
     }
 }
