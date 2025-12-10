@@ -67,8 +67,6 @@ jobs:
         binary:
           - architecture: x86_64-linux
             runner: ubuntu-latest
-          - architecture: aarch64-linux
-            runner: ubuntu-latest
     name: Binary ${{ matrix.binary.architecture }}
     uses: ./.github/workflows/build-binaries.yaml
     with:
