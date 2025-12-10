@@ -23,8 +23,6 @@ jobs:
             runner: ubuntu-latest
           - architecture: aarch64-linux
             runner: ubuntu-latest
-          - architecture: armv7l-linux
-            runner: ubuntu-latest
     name: Binary ${{ matrix.binary.architecture }}
     uses: ./.github/workflows/build-binaries.yaml
     with:
@@ -61,7 +59,7 @@ jobs:
           tag_name: v${{ steps.environment.outputs.release_version }}
       - name: Publish binaries
         run: |
-          architectures=("aarch64-linux" "x86_64-linux" "armv7l-linux" )
+          architectures=("aarch64-linux" "x86_64-linux" )
           mkdir -p binaries
           for architecture in "${architectures[@]}"; do
               echo "Downloading from GCP binary gnosis_vpn-${architecture}"

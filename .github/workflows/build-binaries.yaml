@@ -29,7 +29,6 @@ on:
         options:
           - x86_64-linux
           - aarch64-linux
-          - armv7l-linux
         required: true
         description: "Architecture to build for"
 concurrency:
