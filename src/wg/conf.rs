@@ -65,7 +65,7 @@ fn extract_peers(content: String) -> Vec<String> {
         } else if trimmed_line.starts_with('[') {
             in_peer_section = false;
         } else if in_peer_section {
-            lines.push(trimmed_line.to_string());
+            lines.push(line.to_string());
         }
     }
 
@@ -79,15 +79,15 @@ mod tests {
     #[test]
     fn should_extract_interface_section() -> anyhow::Result<()> {
         let content = r#"
-        [Interface]
-        Address = 10.128.0.0/32
-        PrivateKey = someprivatekey
-        [Peer]
-        PublicKey = somepublickey
-        AllowedIPs = 10.128.0.120/32
-        [Peer]
-        PublicKey = anotherpublickey
-        AllowedIPs = 10.128.0.122/32
+            [Interface]
+            Address = 10.128.0.0/32
+            PrivateKey = someprivatekey
+            [Peer]
+            PublicKey = somepublickey
+            AllowedIPs = 10.128.0.120/32
+            [Peer]
+            PublicKey = anotherpublickey
+            AllowedIPs = 10.128.0.122/32
         "#;
         let section = extract_peers(content.to_string());
         assert_eq!(section.len(), 7);
@@ -96,8 +96,8 @@ mod tests {
         assert!(section.iter().any(|line| line.contains("AllowedIPs = 10.128.0.120/32")));
         assert!(section.iter().any(|line| line.contains("AllowedIPs = 10.128.0.122/32")));
         assert!(section.iter().any(|line| !line.contains("[Interface]")));
-        assert!(section.iter().any(|line| !line.starts_with("Address =")));
-        assert!(section.iter().any(|line| !line.starts_with("PrivateKey =")));
+        assert!(section.iter().any(|line| !line.contains("Address =")));
+        assert!(section.iter().any(|line| !line.contains("PrivateKey =")));
         Ok(())
     }
 }

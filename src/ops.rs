@@ -83,9 +83,9 @@ fn extract_interface_section(content: String) -> Result<Vec<String>, anyhow::Err
             }
         } else if in_interface_section {
             lines.push(line.to_string());
-            if line.starts_with("PrivateKey =") {
+            if trimmed.starts_with("PrivateKey =") {
                 found_private_key = true;
-            } else if line.starts_with("Address =") {
+            } else if trimmed.starts_with("Address =") {
                 found_address = true;
             }
         }
@@ -113,20 +113,20 @@ mod tests {
     #[test]
     fn should_extract_interface_section() -> anyhow::Result<()> {
         let content = r#"
-[Interface]
-Address = 10.128.0.0/32
-PrivateKey = someprivatekey
-[Peer]
-PublicKey = somepublickey
-AllowedIPs = 10.128.0.120/32
-[Peer]
-PublicKey = anotherpublickey
-AllowedIPs = 10.128.0.122/32
-"#;
+            [Interface]
+            Address = 10.128.0.0/32
+            PrivateKey = someprivatekey
+            [Peer]
+            PublicKey = somepublickey
+            AllowedIPs = 10.128.0.120/32
+            [Peer]
+            PublicKey = anotherpublickey
+            AllowedIPs = 10.128.0.122/32
+        "#;
         let section = extract_interface_section(content.to_string())?;
         assert_eq!(section.len(), 2);
-        assert!(section.iter().any(|line| line.starts_with("PrivateKey")));
-        assert!(section.iter().any(|line| line.starts_with("Address")));
+        assert!(section.iter().any(|line| line.contains("PrivateKey")));
+        assert!(section.iter().any(|line| line.contains("Address")));
         Ok(())
     }
 }
