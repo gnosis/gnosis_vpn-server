@@ -14,7 +14,6 @@ pub enum Error {
 pub trait ShellCommandExt {
     fn run(&mut self) -> Result<(), Error>;
     fn run_stdout(&mut self) -> Result<String, Error>;
-    fn spawn_no_capture(&mut self) -> Result<(), Error>;
 }
 
 impl ShellCommandExt for Command {
@@ -44,17 +43,6 @@ impl ShellCommandExt for Command {
         let output = self.output()?;
         let cmd_debug = format!("{:?}", self);
         stdout_from_output(cmd_debug, output)
-    }
-
-    fn spawn_no_capture(&mut self) -> Result<(), Error> {
-        let mut cmd = self
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()?;
-        match cmd.wait() {
-            Ok(status) if status.success() => Ok(()),
-            _ => Err(Error::CommandFailed),
-        }
     }
 }
 

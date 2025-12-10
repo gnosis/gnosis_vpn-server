@@ -4,6 +4,8 @@ use std::process::Command;
 use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::peer::Peer;
 
+pub type Error = shell_command_ext::Error;
+
 pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<(), shell_command_ext::Error> {
     // add peer to interface
     Command::new("wg")

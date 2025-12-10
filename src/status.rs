@@ -56,11 +56,9 @@ pub struct PublicKeys {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("No interface found")]
-    NoInterface,
-    #[error("Error during wg show: {0}")]
+    #[error(transparent)]
     WgShow(#[from] show::Error),
-    #[error("System time error: {0}")]
+    #[error(transparent)]
     SystemTime(#[from] SystemTimeError),
 }
 
@@ -97,11 +95,7 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, ApiError> {
 }
 
 pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
     match res_peer {
         Some(peer) => {
@@ -136,11 +130,7 @@ pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
 }
 
 pub fn run(ops: &Ops) -> Result<Status, Error> {
-    let interface = match ops.interface() {
-        Some(interface) => interface,
-        None => return Err(Error::NoInterface),
-    };
-    let dump = show::dump(interface).map_err(Error::WgShow)?;
+    let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
 
     let (inside, outside): (Vec<&Peer>, Vec<&Peer>) = dump
         .peers

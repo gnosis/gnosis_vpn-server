@@ -21,14 +21,10 @@ pub struct Dump {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Generic error: {0}")]
-    Generic(String),
-    #[error(transparent)]
-    IO(#[from] IOError),
-    #[error("No interface found")]
-    NoInterface,
     #[error("Failed parsing interface address")]
     NoAddress,
+    #[error(transparent)]
+    IO(#[from] IOError),
     #[error(transparent)]
     Command(#[from] shell_command_ext::Error),
 }
@@ -39,12 +35,12 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
         .arg("inet")
         .arg("addr")
         .arg("show")
-        .arg(ops.interface_name)
+        .arg(ops.interface_name.clone())
         .run_stdout()?;
 
     let wg_stdout = Command::new("wg")
         .arg("showconf")
-        .arg(ops.interface_name)
+        .arg(ops.interface_name.clone())
         .run_stdout()?;
 
     // Prepend with maintainer information

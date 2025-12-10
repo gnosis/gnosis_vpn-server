@@ -21,14 +21,14 @@ pub struct Dump {
 pub enum Error {
     #[error("Generic error: {0}")]
     Generic(String),
-    #[error(transparent)]
-    IO(#[from] IOError),
     #[error("No output lines found")]
     NoOutputLines,
     #[error("Wrong number of fields in server line")]
     WrongNumberOfFieldsInServerLine,
     #[error("Wrong number of fields in peer line")]
     WrongNumberOfFieldsInPeerLine,
+    #[error(transparent)]
+    IO(#[from] IOError),
     #[error(transparent)]
     Command(#[from] shell_command_ext::Error),
 }
