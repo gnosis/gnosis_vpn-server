@@ -35,6 +35,8 @@ mod wg;
 #[rocket::main]
 async fn main() -> Result<()> {
     let args = cli::parse();
+    // install global collector configured based on RUST_LOG env var.
+    tracing_subscriber::fmt::init();
 
     let config_path = fs::canonicalize(args.config_file).context("failed locating config file")?;
     let content = fs::read_to_string(&config_path).context("failed reading config file")?;
@@ -47,8 +49,6 @@ async fn main() -> Result<()> {
             periodically_run_cleanup,
             sync_wg_interface,
         } => {
-            // install global collector configured based on RUST_LOG env var.
-            tracing_subscriber::fmt::init();
             tracing::info!(
                 "serving {name} v{version} on {ip}:{port}",
                 name = env!("CARGO_PKG_NAME"),

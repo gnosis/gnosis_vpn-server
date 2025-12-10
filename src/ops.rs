@@ -15,6 +15,7 @@ pub struct Ops {
     pub rocket_port: u16,
     pub wg_config: PathBuf,
     pub interface_name: String,
+    pub interface_section: Vec<String>,
     pub client_handshake_timeout: Duration,
     pub client_cleanup_interval: Duration,
 }
@@ -33,12 +34,14 @@ impl Ops {
             config_path
         ))?;
         let wg_config_path = config_parent.join(&config.wireguard_config_path);
-        println!("WireGuard config path: {:?}", wg_config_path);
         let wg_config = fs::canonicalize(wg_config_path).context("Canonicalizing WireGuard config path")?;
         let interface_name = wg_config
             .file_stem()
             .map(|s| s.to_string_lossy().to_string())
             .ok_or(anyhow::anyhow!("Invalid WireGuard interface name"))?;
+
+        let content = fs::read_to_string(&wg_config).context("Reading WireGuard config file")?;
+        let interface_section = extract_interface_section(content)?;
 
         let client_handshake_timeout = config
             .client_handshake_timeout_s
@@ -54,9 +57,52 @@ impl Ops {
             rocket_port,
             wg_config,
             interface_name,
+            interface_section,
             client_handshake_timeout,
             client_cleanup_interval,
         })
+    }
+}
+
+fn extract_interface_section(content: String) -> Result<Vec<String>, anyhow::Error> {
+    let mut lines = Vec::new();
+    let mut in_interface_section = false;
+
+    // minimal fields needed
+    let mut found_private_key = false;
+    let mut found_address = false;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') {
+            if in_interface_section {
+                break;
+            }
+            if trimmed == "[Interface]" {
+                in_interface_section = true;
+            }
+        } else if in_interface_section {
+            lines.push(line.to_string());
+            if line.starts_with("PrivateKey =") {
+                found_private_key = true;
+            } else if line.starts_with("Address =") {
+                found_address = true;
+            }
+        }
+    }
+
+    if !found_private_key {
+        return Err(anyhow::anyhow!("Missing PrivateKey in [Interface] section"));
+    }
+
+    if !found_address {
+        return Err(anyhow::anyhow!("Missing Address in [Interface] section"));
+    }
+
+    if lines.is_empty() {
+        Err(anyhow::anyhow!("No [Interface] section found in WireGuard config"))
+    } else {
+        Ok(lines)
     }
 }
 
@@ -107,6 +153,26 @@ end = "10.128.0.10""#,
 
         assert_eq!(ops.interface(), Some("custom0"));
 
+        Ok(())
+    }
+
+    #[test]
+    fn should_extract_interface_section() -> anyhow::Result<()> {
+        let content = r#"
+        [Interface]
+        Address = 10.128.0.0/32
+        PrivateKey = someprivatekey
+        [Peer]
+        PublicKey = somepublickey
+        AllowedIPs = 10.128.0.120/32
+        [Peer]
+        PublicKey = anotherpublickey
+        AllowedIPs = 10.128.0.122/32
+        "#;
+        let section = extract_interface_section(content.to_string())?;
+        assert_eq!(section.len(), 2);
+        assert!(section.iter().any(|line| line.contains("PrivateKey")));
+        assert!(section.iter().any(|line| line.contains("Address")));
         Ok(())
     }
 }
