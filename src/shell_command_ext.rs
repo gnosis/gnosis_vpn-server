@@ -7,7 +7,7 @@ use std::process::{Command, Output};
 pub enum Error {
     #[error("Command execution failed")]
     CommandFailed,
-    #[error("IO error: {0}")]
+    #[error("IO: {0}")]
     IO(#[from] io::Error),
 }
 

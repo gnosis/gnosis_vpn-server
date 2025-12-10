@@ -56,9 +56,9 @@ pub struct PublicKeys {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error(transparent)]
+    #[error("WgShow: {0}")]
     WgShow(#[from] show::Error),
-    #[error(transparent)]
+    #[error("System time: {0}")]
     SystemTime(#[from] SystemTimeError),
 }
 

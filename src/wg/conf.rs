@@ -23,9 +23,9 @@ pub struct Dump {
 pub enum Error {
     #[error("Failed parsing interface address")]
     NoAddress,
-    #[error(transparent)]
+    #[error("IO: {0}")]
     IO(#[from] IOError),
-    #[error(transparent)]
+    #[error("Command: {0}")]
     Command(#[from] shell_command_ext::Error),
 }
 

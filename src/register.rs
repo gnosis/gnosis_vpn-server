@@ -25,9 +25,9 @@ pub enum Error {
     NoFreeIp,
     #[error("IP address already taken")]
     IpAlreadyTaken,
-    #[error(transparent)]
+    #[error("WgShow: {0}")]
     WgShow(#[from] show::Error),
-    #[error(transparent)]
+    #[error("WgSet: {0}")]
     WgSet(#[from] set::Error),
 }
 

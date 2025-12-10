@@ -17,9 +17,9 @@ pub struct Unregister {
 pub enum Error {
     #[error("Peer not found")]
     PeerNotFound,
-    #[error(transparent)]
+    #[error("WgSet: {0}")]
     WgSet(#[from] set::Error),
-    #[error(transparent)]
+    #[error("WgShow: {0}")]
     WgShow(#[from] show::Error),
 }
 

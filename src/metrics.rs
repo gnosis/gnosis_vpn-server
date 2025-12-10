@@ -14,11 +14,11 @@ pub struct Metrics {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error(transparent)]
+    #[error("Prometheus: {0}")]
     Prometheus(#[from] prometheus::Error),
-    #[error(transparent)]
+    #[error("UTF-8 Conversion: {0}")]
     Utf8Conversion(#[from] std::string::FromUtf8Error),
-    #[error(transparent)]
+    #[error("WgShow: {0}")]
     WgShow(#[from] ShowError),
 }
 

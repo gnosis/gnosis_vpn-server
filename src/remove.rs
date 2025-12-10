@@ -28,11 +28,11 @@ pub struct RemoveDisconnected {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error(transparent)]
+    #[error("WgShow: {0}")]
     WgShow(#[from] show::Error),
-    #[error(transparent)]
+    #[error("Unregister: {0}")]
     Unregister(#[from] unregister::Error),
-    #[error(transparent)]
+    #[error("System time: {0}")]
     SystemTime(#[from] SystemTimeError),
 }
 
