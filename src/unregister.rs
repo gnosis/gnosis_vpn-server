@@ -1,6 +1,6 @@
-use rocket::http::Status;
-use rocket::serde::{json::Json, Deserialize};
 use rocket::State;
+use rocket::http::Status;
+use rocket::serde::{Deserialize, json::Json};
 use serde::Serialize;
 use thiserror::Error;
 
