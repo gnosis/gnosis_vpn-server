@@ -1,6 +1,6 @@
 # IP range of allowed VPN clients
 allowed_client_ips = { start = "10.128.0.2", end = "10.128.0.10" }
-# wg server configuration path
+# wg server configuration path - will be managed by gnosis_vpn-server for persisting wg state
 wireguard_config_path = "./wggnosisvpn.conf"
 
 # [optional] server endpoint

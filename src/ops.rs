@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::fs;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -11,38 +11,46 @@ pub struct Ops {
     pub client_address_range: IpRange,
     pub rocket_address: IpAddr,
     pub rocket_port: u16,
-    pub wg_interface_config: PathBuf,
+    pub wg_config: PathBuf,
+    pub interface_name: String,
     pub client_handshake_timeout: Duration,
     pub client_cleanup_interval: Duration,
 }
 
-impl Ops {
-    pub fn interface(&self) -> Option<&str> {
-        self.wg_interface_config.file_stem().and_then(OsStr::to_str)
-    }
-}
+const DEFAULT_ROCKET_ADDRESS: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
+const DEFAULT_ROCKET_PORT: u16 = 8000;
+const DEFAULT_CLIENT_HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+const DEFAULT_CLIENT_CLEANUP_INTERVAL: Duration = Duration::from_secs(3 * 60);
 
-impl From<Config> for Ops {
-    fn from(config: Config) -> Self {
-        let def_rocket_address = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-        let def_rocket_port = 8000;
-        let def_client_handshake_timeout = Duration::from_secs(5 * 60);
-        let def_client_cleanup_interval = Duration::from_secs(3 * 60);
+impl TryFrom<Config> for Ops {
+    type Error = anyhow::Error;
 
-        Self {
+    fn try_from(config: Config) -> Result<Self, Self::Error> {
+        let rocket_address = config.endpoint.map(|addr| addr.ip()).unwrap_or(DEFAULT_ROCKET_ADDRESS);
+        let rocket_port = config.endpoint.map(|addr| addr.port()).unwrap_or(DEFAULT_ROCKET_PORT);
+        let wg_config = fs::canonicalize(&config.wireguard_config_path)?;
+        let interface_name = wg_config
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .ok_or(anyhow::anyhow!("Invalid WireGuard interface name"))?;
+
+        let client_handshake_timeout = config
+            .client_handshake_timeout_s
+            .map(Duration::from_secs)
+            .unwrap_or(DEFAULT_CLIENT_HANDSHAKE_TIMEOUT);
+        let client_cleanup_interval = config
+            .client_cleanup_interval_s
+            .map(Duration::from_secs)
+            .unwrap_or(DEFAULT_CLIENT_CLEANUP_INTERVAL);
+        Ok(Self {
             client_address_range: config.allowed_client_ips.clone(),
-            rocket_address: config.endpoint.map(|addr| addr.ip()).unwrap_or(def_rocket_address),
-            rocket_port: config.endpoint.map(|addr| addr.port()).unwrap_or(def_rocket_port),
-            wg_interface_config: config.wireguard_config_path.clone(),
-            client_handshake_timeout: config
-                .client_handshake_timeout_s
-                .map(Duration::from_secs)
-                .unwrap_or(def_client_handshake_timeout),
-            client_cleanup_interval: config
-                .client_cleanup_interval_s
-                .map(Duration::from_secs)
-                .unwrap_or(def_client_cleanup_interval),
-        }
+            rocket_address,
+            rocket_port,
+            wg_config,
+            interface_name,
+            client_handshake_timeout,
+            client_cleanup_interval,
+        })
     }
 }
 
