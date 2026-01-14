@@ -42,9 +42,9 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
 
     let mut lines: Vec<String> = Vec::new();
     lines.push(prepend_str);
-    lines.push("\n".to_string());
+    lines.push("".to_string());
     lines.extend(ops.interface_section.clone());
-    lines.push("\n".to_string());
+    lines.push("".to_string());
     lines.extend(peers_content);
 
     let content = lines.join("\n").into_bytes();
