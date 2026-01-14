@@ -38,7 +38,7 @@ pub fn save_file(ops: &Ops) -> Result<(), Error> {
     let peers_content = extract_peers(wg_stdout);
 
     // Prepend with maintainer information
-    let prepend_str = format!("# Maintained by {}\n\n", env!("CARGO_PKG_NAME"));
+    let prepend_str = format!("# Maintained by {}", env!("CARGO_PKG_NAME"));
 
     let mut lines: Vec<String> = Vec::new();
     lines.push(prepend_str);
