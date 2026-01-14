@@ -80,6 +80,7 @@ fn extract_interface_section(content: String) -> Result<Vec<String>, anyhow::Err
             }
             if trimmed == "[Interface]" {
                 in_interface_section = true;
+                lines.push(line.to_string());
             }
         } else if in_interface_section {
             lines.push(line.to_string());
@@ -124,7 +125,8 @@ mod tests {
             AllowedIPs = 10.128.0.122/32
         "#;
         let section = extract_interface_section(content.to_string())?;
-        assert_eq!(section.len(), 2);
+        assert_eq!(section.len(), 3);
+        assert!(section.iter().any(|line| line.contains("[Interface]")));
         assert!(section.iter().any(|line| line.contains("PrivateKey")));
         assert!(section.iter().any(|line| line.contains("Address")));
         Ok(())
