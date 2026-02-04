@@ -5,10 +5,12 @@ use thiserror::Error;
 
 use std::fs;
 use std::net::Ipv4Addr;
+use std::process::Command;
 use std::time::SystemTimeError;
 
 use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
+use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::{peer::Peer, show};
 
 #[derive(Debug, Serialize)]
@@ -76,11 +78,13 @@ pub enum Error {
     #[error("System time error: {0}")]
     SystemTime(#[from] SystemTimeError),
     #[error("Load average parse error: {0}")]
-    LoadAvgParseError(String),
+    LoadAvgParse(String),
     #[error("nproc parse error: {0}")]
-    NprocParseError(String),
+    NprocParse(String),
     #[error("Shell command error: {0}")]
     ShellCommandExt(#[from] shell_command_ext::Error),
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 #[get("/status/<public_key>")]
@@ -103,11 +107,11 @@ pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSin
 pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, ApiError> {
     let status = run(ops).map_err(|error| {
         tracing::error!(?error, "GET /status failed to determine ip slots");
-        Err(api_error::internal_server_error())
+        api_error::internal_server_error()
     })?;
     let load_avg = determine_load_avg().map_err(|error| {
         tracing::error!(?error, "GET /status failed to determine load average");
-        Err(api_error::internal_server_error())
+        api_error::internal_server_error()
     })?;
 
     Ok(Json(ApiStatus {
@@ -222,23 +226,23 @@ fn determine_load_avg() -> Result<ApiLoadAvg, Error> {
     let parts: Vec<&str> = content.split_whitespace().collect();
 
     if parts.len() < 3 {
-        return Err(LoadAvgParseError("Insufficient parts in /proc/loadavg".to_string()));
+        return Err(Error::LoadAvgParse("Insufficient parts in /proc/loadavg".to_string()));
     }
 
     let one: f32 = parts[0]
         .parse()
-        .map_err(|e| LoadAvgParseError(format!("Failed to parse 1-minute load average: {}", e)))?;
+        .map_err(|e| Error::LoadAvgParse(format!("Failed to parse 1-minute load average: {}", e)))?;
     let five: f32 = parts[1]
         .parse()
-        .map_err(|e| LoadAvgParseError(format!("Failed to parse 5-minute load average: {}", e)))?;
+        .map_err(|e| Error::LoadAvgParse(format!("Failed to parse 5-minute load average: {}", e)))?;
     let fifteen: f32 = parts[2]
         .parse()
-        .map_err(|e| LoadAvgParseError(format!("Failed to parse 15-minute load average: {}", e)))?;
+        .map_err(|e| Error::LoadAvgParse(format!("Failed to parse 15-minute load average: {}", e)))?;
 
     let nproc_output = Command::new("nproc").run_stdout()?;
     let nproc: u16 = nproc_output
         .parse()
-        .map_err(|e| NprocParseError(format!("Failed to parse nproc output: {}", e)))?;
+        .map_err(|e| Error::NprocParse(format!("Failed to parse nproc output: {}", e)))?;
 
     Ok(ApiLoadAvg {
         one,

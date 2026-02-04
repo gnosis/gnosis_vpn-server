@@ -1,8 +1,9 @@
+use thiserror::Error;
+
 use std::env;
 use std::fs;
 use std::net::Ipv4Addr;
 use std::process::Command;
-use thiserror::Error;
 
 use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::peer::Peer;
@@ -11,14 +12,16 @@ use crate::wg::peer::Peer;
 pub enum Error {
     #[error("Command failed: {0}")]
     Command(#[from] shell_command_ext::Error),
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<String, Error> {
     let preshared_key = Command::new("wg").arg("genpsk").run_stdout()?;
 
     let tmp_file = env::temp_dir().join(format!(".{}.psk", public_key));
-    fs::write(&tmp_file, preshared_key).map_err(|error| {
-        tracing::error!(?error, file = tmp_file.display(), "Failed to write temporary psk file");
+    fs::write(&tmp_file, preshared_key.clone()).map_err(|error| {
+        tracing::error!(?error, file = %tmp_file.display(), "Failed to write temporary psk file");
         error
     })?;
 
@@ -29,7 +32,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<Stri
         .arg("peer")
         .arg(public_key)
         .arg("preshared-key")
-        .arg(tmp_file)
+        .arg(&tmp_file)
         .arg("allowed-ips")
         .arg(format!("{ip}/32"))
         .run()?;
@@ -45,7 +48,7 @@ pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<Stri
         .run()?;
 
     fs::remove_file(&tmp_file).map_err(|error| {
-        tracing::error!(?error, file = tmp_file.display(), "Failed to remove temporary psk file");
+        tracing::error!(?error, file = %tmp_file.display(), "Failed to remove temporary psk file");
         error
     })?;
 
