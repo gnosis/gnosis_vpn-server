@@ -27,14 +27,15 @@
   };
 
   outputs =
-    inputs@{ self
-    , flake-parts
-    , nixpkgs
-    , rust-overlay
-    , crane
-    , advisory-db
-    , treefmt-nix
-    , ...
+    inputs@{
+      self,
+      flake-parts,
+      nixpkgs,
+      rust-overlay,
+      crane,
+      advisory-db,
+      treefmt-nix,
+      ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
@@ -52,12 +53,13 @@
         "x86_64-darwin"
       ];
       perSystem =
-        { config
-        , self'
-        , inputs'
-        , lib
-        , system
-        , ...
+        {
+          config,
+          self',
+          inputs',
+          lib,
+          system,
+          ...
         }:
         let
           pkgs = (
