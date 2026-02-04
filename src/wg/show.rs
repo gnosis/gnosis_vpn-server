@@ -123,10 +123,10 @@ mod tests {
 
     fn sample_output() -> &'static str {
         r###"GEd85EVCEFq5NfKEeTbRUHRutLF0+1WNEP4WG8Aq1kc=	o+5emsMXvOUqeUSmwATZN10v2lYMu/FgMMsABclML3c=	51820	off
-hP+s10cZM6oPORcM7YR0lgpxre84Kr1R+EDOb4eg7Qo=	(none)	172.18.0.4:53169	10.128.0.2/32	1740069703	745872	30210620	30
-qSF/V46h4fIjpChUU3lAsA13W+E7+uHIB7N2Riu+rVE=	(none)	(none)	10.128.0.3/32	0	0	0	30
-TlPYzf9UxM2Jm5K2d0B6SSiekBQlmJ1MgP6YhzivIR4=	(none)	172.18.0.4:47258	10.128.0.6/32	1740484870	20855368	69071528	30
-RhJoIbojG5m3+GoNtliiZAVJ0kyxiEPGegwBwE58FmA=	(none)	(none)	10.128.0.7/32	0	0	0	30
+hP+s10cZM6oPORcM7YR0lgpxre84Kr1R+EDOb4eg7Qo=	oUDJ+7tLPdEHmiVPaU/Hti6Kn1nBBH2SgQxf07qWl0M=	172.18.0.4:53169	10.128.0.2/32	1740069703	745872	30210620	30
+qSF/V46h4fIjpChUU3lAsA13W+E7+uHIB7N2Riu+rVE=	oVk+gsgje2KLfTx597TqwJdJqhPPAewWk29+Pa2pxBs=	10.128.0.3/32	0	0	0	30
+TlPYzf9UxM2Jm5K2d0B6SSiekBQlmJ1MgP6YhzivIR4=	yagzlTqaCZNwvM9aY/bdNEOAJIikA+1lI28ZQJem8zc=	172.18.0.4:47258	10.128.0.6/32	1740484870	20855368	69071528	30
+RhJoIbojG5m3+GoNtliiZAVJ0kyxiEPGegwBwE58FmA=	DHMhxCbBNdVedRMHgGhMmyctoCJi19nyD2XHWIN/QSw=	10.128.0.7/32	0	0	0	30
 "###
     }
 
@@ -145,5 +145,21 @@ RhJoIbojG5m3+GoNtliiZAVJ0kyxiEPGegwBwE58FmA=	(none)	(none)	10.128.0.7/32	0	0	0	3
         assert_eq!(dump.peers[1].public_key, "qSF/V46h4fIjpChUU3lAsA13W+E7+uHIB7N2Riu+rVE=");
         assert_eq!(dump.peers[2].public_key, "TlPYzf9UxM2Jm5K2d0B6SSiekBQlmJ1MgP6YhzivIR4=");
         assert_eq!(dump.peers[3].public_key, "RhJoIbojG5m3+GoNtliiZAVJ0kyxiEPGegwBwE58FmA=");
+        assert_eq!(
+            dump.peers[0].preshared_key,
+            "oUDJ+7tLPdEHmiVPaU/Hti6Kn1nBBH2SgQxf07qWl0M="
+        );
+        assert_eq!(
+            dump.peers[1].preshared_key,
+            "oVk+gsgje2KLfTx597TqwJdJqhPPAewWk29+Pa2pxBs="
+        );
+        assert_eq!(
+            dump.peers[2].preshared_key,
+            "yagzlTqaCZNwvM9aY/bdNEOAJIikA+1lI28ZQJem8zc="
+        );
+        assert_eq!(
+            dump.peers[3].preshared_key,
+            "DHMhxCbBNdVedRMHgGhMmyctoCJi19nyD2XHWIN/QSw="
+        );
     }
 }
