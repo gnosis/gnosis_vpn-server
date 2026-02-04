@@ -19,7 +19,7 @@ pub enum Error {
 pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<String, Error> {
     let preshared_key = Command::new("wg").arg("genpsk").run_stdout()?;
 
-    let tmp_file = env::temp_dir().join(format!(".{}.psk", public_key));
+    let tmp_file = env::temp_dir().join(format!(".{}.psk", ip));
     fs::write(&tmp_file, preshared_key.clone()).map_err(|error| {
         tracing::error!(?error, file = %tmp_file.display(), "Failed to write temporary psk file");
         error
