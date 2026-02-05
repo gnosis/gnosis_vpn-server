@@ -47,6 +47,7 @@ impl Drop for TmpFile {
 
 pub fn add_peer(interface: &str, public_key: &str, ip: &Ipv4Addr) -> Result<String, Error> {
     let preshared_key = Command::new("wg").arg("genpsk").run_stdout()?;
+    // using the client ip as filename is unique enough for our purpose
     let tmp_file = TmpFile::create(ip, &preshared_key)?;
 
     // add peer to interface
