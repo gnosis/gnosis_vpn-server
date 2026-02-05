@@ -213,8 +213,8 @@
             ];
 
             programs.nixfmt = {
-              enable = pkgs.lib.meta.availableOn pkgs.stdenv.buildPlatform pkgs.nixfmt-rfc-style.compiler;
-              package = pkgs.nixfmt-rfc-style;
+              enable = pkgs.lib.meta.availableOn pkgs.stdenv.buildPlatform pkgs.nixfmt.compiler;
+              package = pkgs.nixfmt;
             };
             programs.prettier.enable = true;
             settings.formatter.prettier.excludes = [

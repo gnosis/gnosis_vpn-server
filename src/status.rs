@@ -3,11 +3,14 @@ use rocket::serde::json::Json;
 use serde::Serialize;
 use thiserror::Error;
 
+use std::fs;
 use std::net::Ipv4Addr;
+use std::process::Command;
 use std::time::SystemTimeError;
 
 use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
+use crate::shell_command_ext::{self, ShellCommandExt};
 use crate::wg::{peer::Peer, show};
 
 #[derive(Debug, Serialize)]
@@ -34,8 +37,22 @@ pub struct Status {
 
 #[derive(Debug, Serialize)]
 pub struct ApiStatus {
+    slots: ApiSlots,
+    load_avg: ApiLoadAvg,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApiSlots {
     available: u32,
     connected: u32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApiLoadAvg {
+    one: f32,
+    five: f32,
+    fifteen: f32,
+    nproc: u16,
 }
 
 #[derive(Debug, Serialize)]
@@ -60,6 +77,14 @@ pub enum Error {
     WgShow(#[from] show::Error),
     #[error("System time error: {0}")]
     SystemTime(#[from] SystemTimeError),
+    #[error("Load average parse error: {0}")]
+    LoadAvgParse(String),
+    #[error("nproc parse error: {0}")]
+    NprocParse(String),
+    #[error("Shell command error: {0}")]
+    ShellCommandExt(#[from] shell_command_ext::Error),
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 #[get("/status/<public_key>")]
@@ -80,18 +105,22 @@ pub fn api_single(public_key: String, ops: &State<Ops>) -> Result<Json<StatusSin
 
 #[get("/status")]
 pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, ApiError> {
-    let res = run(ops);
+    let status = run(ops).map_err(|error| {
+        tracing::error!(?error, "GET /status failed to determine ip slots");
+        api_error::internal_server_error()
+    })?;
+    let load_avg = determine_load_avg().map_err(|error| {
+        tracing::error!(?error, "GET /status failed to determine load average");
+        api_error::internal_server_error()
+    })?;
 
-    match res {
-        Ok(status) => Ok(Json(ApiStatus {
+    Ok(Json(ApiStatus {
+        slots: ApiSlots {
             available: status.slots.available,
             connected: status.slots.connected,
-        })),
-        Err(err) => {
-            tracing::error!(?err, "GET /status failed");
-            Err(api_error::internal_server_error())
-        }
-    }
+        },
+        load_avg,
+    }))
 }
 
 pub fn run_single(ops: &Ops, public_key: &str) -> Result<StatusSingle, Error> {
@@ -189,5 +218,36 @@ pub fn run(ops: &Ops) -> Result<Status, Error> {
         slots,
         public_keys,
         clients_outside_of_slots_range: outside.len() as u32,
+    })
+}
+
+fn determine_load_avg() -> Result<ApiLoadAvg, Error> {
+    let content = fs::read_to_string("/proc/loadavg")?;
+    let parts: Vec<&str> = content.split_whitespace().collect();
+
+    if parts.len() < 3 {
+        return Err(Error::LoadAvgParse("Insufficient parts in /proc/loadavg".to_string()));
+    }
+
+    let one: f32 = parts[0]
+        .parse()
+        .map_err(|e| Error::LoadAvgParse(format!("Failed to parse 1-minute load average: {}", e)))?;
+    let five: f32 = parts[1]
+        .parse()
+        .map_err(|e| Error::LoadAvgParse(format!("Failed to parse 5-minute load average: {}", e)))?;
+    let fifteen: f32 = parts[2]
+        .parse()
+        .map_err(|e| Error::LoadAvgParse(format!("Failed to parse 15-minute load average: {}", e)))?;
+
+    let nproc_output = Command::new("nproc").run_stdout()?;
+    let nproc: u16 = nproc_output
+        .parse()
+        .map_err(|e| Error::NprocParse(format!("Failed to parse nproc output: {}", e)))?;
+
+    Ok(ApiLoadAvg {
+        one,
+        five,
+        fifteen,
+        nproc,
     })
 }
