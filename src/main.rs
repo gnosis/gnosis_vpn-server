@@ -32,6 +32,7 @@ mod remove;
 mod shell_command_ext;
 mod status;
 mod unregister;
+mod versions;
 mod wg;
 
 #[rocket::main]
@@ -89,6 +90,7 @@ async fn main() -> Result<()> {
                 )
                 .mount("/api/v1", routes![status::api, ping::ping])
                 .mount("/metrics", routes![metrics::metrics_endpoint])
+                .mount("/versions", routes![versions::versions])
                 .mount("/", routes![index::index])
                 .launch();
 
