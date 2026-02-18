@@ -32,7 +32,7 @@ mod status;
 mod unregister;
 mod wg;
 mod ping;
-mod versions;
+mod index;
 
 #[rocket::main]
 async fn main() -> Result<()> {
@@ -83,13 +83,10 @@ async fn main() -> Result<()> {
                 .manage(ops.clone())
                 .manage(metrics)
                 .manage(sync_wg_interface)
-                .mount(
-                    "/api/v1/clients",
-                    routes![register::api, unregister::api, status::api_single],
-                )
-                .mount("/metrics", routes![metrics::metrics_endpoint])
+                .mount( "/api/v1/clients", routes![register::api, unregister::api, status::api_single],)
                 .mount("/api/v1", routes![status::api, ping::ping])
-                .mount("/versions", routes![versions::api_versions])
+                .mount("/metrics", routes![metrics::metrics_endpoint])
+                .mount("/", routes![index::index])
                 .launch();
 
             if periodically_run_cleanup {
