@@ -22,14 +22,17 @@ use crate::wg::quick;
 mod api_error;
 mod cli;
 mod config;
+mod index;
 mod ip_range;
 mod metrics;
 mod ops;
+mod ping;
 mod register;
 mod remove;
 mod shell_command_ext;
 mod status;
 mod unregister;
+mod versions;
 mod wg;
 
 #[rocket::main]
@@ -85,8 +88,10 @@ async fn main() -> Result<()> {
                     "/api/v1/clients",
                     routes![register::api, unregister::api, status::api_single],
                 )
+                .mount("/api/v1", routes![status::api, ping::ping])
                 .mount("/metrics", routes![metrics::metrics_endpoint])
-                .mount("/api/v1", routes![status::api])
+                .mount("/versions", routes![versions::versions])
+                .mount("/", routes![index::index])
                 .launch();
 
             if periodically_run_cleanup {
