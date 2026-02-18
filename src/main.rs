@@ -31,6 +31,8 @@ mod shell_command_ext;
 mod status;
 mod unregister;
 mod wg;
+mod ping;
+mod versions;
 
 #[rocket::main]
 async fn main() -> Result<()> {
@@ -86,7 +88,8 @@ async fn main() -> Result<()> {
                     routes![register::api, unregister::api, status::api_single],
                 )
                 .mount("/metrics", routes![metrics::metrics_endpoint])
-                .mount("/api/v1", routes![status::api])
+                .mount("/api/v1", routes![status::api, ping::ping])
+                .mount("/versions", routes![versions::api_versions])
                 .launch();
 
             if periodically_run_cleanup {
