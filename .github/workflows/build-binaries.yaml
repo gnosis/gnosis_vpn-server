@@ -22,7 +22,7 @@ on:
       runner:
         type: choice
         options:
-          - ubuntu-latest
+          - depot-ubuntu-22.04-4
         required: true
       architecture:
         type: choice
