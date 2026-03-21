@@ -1,5 +1,5 @@
 #################################################################################
-# Child pipeline to cache Gnosis VPN-Server dependencies
+# Child pipeline to cache Gnosis VPN-Server dependencies                        #
 #################################################################################
 name: Cache dependencies
 env:
