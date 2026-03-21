@@ -24,34 +24,6 @@ jobs:
       architecture: ${{ matrix.binary.architecture }}
       version_type: "pr"
     secrets: inherit
-  comment:
-    name: Comment PR
-    runs-on: depot-ubuntu-22.04-4
-    needs:
-      - build-binaries
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Get version
-        id: vars
-        run: |
-          set -x
-          pr_version=$(grep -E '^version\s*=' Cargo.toml | awk -F\" '{print $2}')-pr.${{ github.event.pull_request.number }}
-          echo "pr_version=$pr_version" >> $GITHUB_OUTPUT
-      - name: Create comment
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            The binaries for this PR can be downloaded from:
-            ```
-            mkdir ./binaries
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-x86_64-linux --destination=./binaries --local-filename=gnosis_vpn-server-x86_64-linux
-
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-aarch64-darwin --destination=./binaries --local-filename=gnosis_vpn-server-aarch64-darwin
-
-            gcloud artifacts files download --project=gnosisvpn-production --location=europe-west3 --repository=rust-binaries gnosis_vpn:${{ steps.vars.outputs.pr_version }}:gnosis_vpn-server-x86_64-darwin --destination=./binaries --local-filename=gnosis_vpn-server-x86_64-darwin
-            ```
   cache-deps:
     name: Cache deps
     if: github.event.pull_request.merged == true
