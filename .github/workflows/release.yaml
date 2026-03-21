@@ -20,7 +20,7 @@ jobs:
       matrix:
         binary:
           - architecture: x86_64-linux
-            runner: ubuntu-latest
+            runner: depot-ubuntu-22.04-4
     name: Binary ${{ matrix.binary.architecture }}
     uses: ./.github/workflows/build-binaries.yaml
     with:
@@ -33,7 +33,7 @@ jobs:
     name: Close release
     needs:
       - build-binaries
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-22.04-4
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

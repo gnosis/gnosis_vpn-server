@@ -15,11 +15,7 @@ jobs:
       matrix:
         binary:
           - architecture: x86_64-linux
-            runner: ubuntu-24.04
-          - architecture: aarch64-darwin
-            runner: macos-15
-          - architecture: x86_64-darwin
-            runner: macos-15
+            runner: depot-ubuntu-22.04-4
     name: Binary ${{ matrix.binary.architecture }}
     uses: ./.github/workflows/build-binaries.yaml
     with:
@@ -30,7 +26,7 @@ jobs:
     secrets: inherit
   comment:
     name: Comment PR
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-22.04-4
     needs:
       - build-binaries
     steps:
