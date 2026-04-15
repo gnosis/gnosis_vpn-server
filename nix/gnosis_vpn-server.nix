@@ -85,7 +85,7 @@ let
         install -m755 ${binary}/bin/gnosis_vpn-server "$BUILD_DIR/gnosis_vpn-server"
 
         echo "[+] Building: gnosis_vpn-server:${platform}"
-        docker build --platform ${archTag} -t "gnosis_vpn-server:${platform}" "$BUILD_DIR/"
+        docker build --platform ${archTag} -t "gnosis_vpn-server:latest" "$BUILD_DIR/"
         echo "[✓] Done: gnosis_vpn-server:${platform}"
       '';
     };

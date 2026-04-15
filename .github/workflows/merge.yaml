@@ -54,12 +54,12 @@ jobs:
           {
             "runner": "depot-ubuntu-22.04-4",
             "architecture": "x86_64-linux",
-            "build_command": "nix build -L .#docker-gnosis_vpn-server-x86_64-linux"
+            "build_command": "nix run .#docker-gnosis_vpn-server-x86_64-linux"
           },
           {
             "runner": "depot-ubuntu-22.04-4",
             "architecture": "aarch64-linux",
-            "build_command": "nix build -L .#docker-gnosis_vpn-server-aarch64-linux"
+            "build_command": "nix run .#docker-gnosis_vpn-server-aarch64-linux"
           }
         ]
       cachix_cache_name: gnosis-vpn-server
