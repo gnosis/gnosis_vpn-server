@@ -40,7 +40,7 @@ jobs:
       gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
   build-docker:
     name: Docker
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@build-docker-v1
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@build-docker-v2
     needs: build-binaries
     permissions:
       contents: read
@@ -65,6 +65,7 @@ jobs:
       cachix_cache_name: gnosis-vpn-server
       docker_image_name: gnosis_vpn-server
       docker_image_format: docker
+      docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
     secrets:
       gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
