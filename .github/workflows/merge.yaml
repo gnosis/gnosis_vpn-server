@@ -13,6 +13,7 @@ concurrency:
 jobs:
   build-binaries:
     name: Binary ${{ matrix.architecture }}
+    if: github.event.pull_request.merged == true
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +41,7 @@ jobs:
       gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
   build-docker:
     name: Docker
+    if: github.event.pull_request.merged == true
     uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@build-docker-v2
     needs: build-binaries
     permissions:
