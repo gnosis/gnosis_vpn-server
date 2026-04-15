@@ -1,15 +1,17 @@
 ---
-name: Merge PR
+name: Build
 on:
   pull_request:
     types:
-      - closed
-      # - synchronize
-    branches:
-      - main
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
 concurrency:
-  group: merge
-  cancel-in-progress: false
+  group: ${{ github.ref }}-build
+  cancel-in-progress: true
+env:
+  CARGO_TERM_COLOR: always
 jobs:
   build-binaries:
     name: Binary ${{ matrix.architecture }}
@@ -20,20 +22,24 @@ jobs:
           - architecture: x86_64-linux
             runner: depot-ubuntu-22.04-4
             build_command: nix build -L .#binary-gnosis_vpn-server-x86_64-linux
+            required_label: ""
           - architecture: aarch64-linux
             runner: depot-ubuntu-22.04-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
+            required_label: "binary:aarch64-linux"
     uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@build-binaries-v2
     permissions:
       contents: read
     with:
-      source_branch: ${{ github.event.pull_request.base.ref }}
-      version_type: pr
+      source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
+      version_type: commit
       architecture: ${{ matrix.architecture }}
       cachix_cache_name: gnosis-vpn-server
       build_command: ${{ matrix.build_command }}
       binary: gnosis_vpn-server
       runner: ${{ matrix.runner }}
+      enabled: ${{ matrix.required_label == '' || contains(github.event.pull_request.labels.*.name, matrix.required_label)
+        }}
     secrets:
       gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -47,19 +53,14 @@ jobs:
       pull-requests: write
       id-token: write
     with:
-      source_branch: ${{ github.event.pull_request.base.ref }}
-      version_type: pr
+      source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
+      version_type: commit
       build_matrix: |
         [
           {
             "runner": "depot-ubuntu-22.04-4",
             "architecture": "x86_64-linux",
             "build_command": "nix build -L .#docker-gnosis_vpn-server-x86_64-linux"
-          },
-          {
-            "runner": "depot-ubuntu-22.04-4",
-            "architecture": "aarch64-linux",
-            "build_command": "nix build -L .#docker-gnosis_vpn-server-aarch64-linux"
           }
         ]
       cachix_cache_name: gnosis-vpn-server
@@ -68,29 +69,14 @@ jobs:
     secrets:
       gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-  cache_deps:
-    name: Cache deps
-    if: github.event.pull_request.merged == true
+  checks:
+    name: Checks
     runs-on: depot-ubuntu-22.04-4
-    timeout-minutes: 60
-    permissions:
-      contents: read
     steps:
-      - name: Cache dependencies
+      - name: Run checks
         uses: hoprnet/hopr-workflows/actions/nix-action@nix-action-v1
         with:
-          source_branch: ${{ github.event.pull_request.base.ref }}
-          cachix_cache_name: gnosis-vpn-server
-          cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          command: |
-            set -e
-            cat >> .cargo/config.toml << TOML
-            [source.hopr-cargo-registry-cache]
-            registry = "sparse+${PRIVATE_CARGO_REGISTRY_PROXY_URL}"
-
-            [source.crates-io]
-            replace-with = "hopr-cargo-registry-cache"
-            TOML
-            nix develop -c cargo fetch
-        env:
-          PRIVATE_CARGO_REGISTRY_PROXY_URL: ${{ secrets.PRIVATE_CARGO_REGISTRY_PROXY_URL }}
+          source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
+          cachix_cache_name: gnosis-vpn-client
+          cachix_auth_token: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          command: nix flake check -L --show-trace --max-jobs 1

@@ -19,7 +19,7 @@ pub trait ShellCommandExt {
 impl ShellCommandExt for Command {
     /// Run the command and print stderr with a warning on success.
     /// Unconditionally captures stdout and stderr regardless of command settings.
-    /// See tokio's output behaviour: https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.output
+    /// See tokio's output behaviour: <https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.output>
     fn run(&mut self) -> Result<(), Error> {
         let output = self.output()?;
         let stderr_empty = output.stderr.is_empty();
