@@ -62,7 +62,14 @@ let
     };
 
   # Creates a shell application that builds the Docker image using `docker build`.
-  # The binary is pre-built by nix and baked into the build context at script-build time.
+  # The binary argument MUST be a fully static musl binary (built by builders.x86_64-linux
+  # or builders.aarch64-linux) — nix-lib configures those builders with:
+  #   crossSystem = musl64 / aarch64-multiplatform-musl
+  #   isStatic    = true
+  # which sets CARGO_BUILD_TARGET=*-unknown-linux-musl and
+  # CARGO_BUILD_RUSTFLAGS="-C target-feature=+crt-static".
+  # The resulting binary has no shared-library dependencies and runs on the
+  # Alpine base image in docker/Dockerfile without a glibc compatibility layer.
   mkDockerBuildScript =
     {
       platform,
@@ -154,17 +161,19 @@ in
   # Cross-compiled — aarch64 Linux
   inherit binary-gnosis_vpn-server-aarch64-linux binary-gnosis_vpn-server-aarch64-linux-dev;
 
-  # Docker build scripts — shell apps that invoke `docker build` with the nix-built binary
+  # Docker build scripts — shell apps that invoke `docker build`.
+  # Each uses the corresponding musl/static cross-compiled binary (see mkDockerBuildScript
+  # comment above), which is Alpine-compatible without any glibc layer.
   docker-gnosis_vpn-server-x86_64-linux = mkDockerBuildScript {
     platform = "x86_64-linux";
     archTag = "linux/amd64";
-    binary = binary-gnosis_vpn-server-x86_64-linux;
+    binary = binary-gnosis_vpn-server-x86_64-linux; # musl static — see builders.x86_64-linux
   };
 
   docker-gnosis_vpn-server-aarch64-linux = mkDockerBuildScript {
     platform = "aarch64-linux";
     archTag = "linux/arm64";
-    binary = binary-gnosis_vpn-server-aarch64-linux;
+    binary = binary-gnosis_vpn-server-aarch64-linux; # musl static — see builders.aarch64-linux
   };
 
   # Tests / QA

@@ -46,7 +46,7 @@ jobs:
       gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
   build-docker:
     name: Docker
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@build-docker-v1
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@build-docker-v2
     needs: build-binaries
     permissions:
       contents: read
