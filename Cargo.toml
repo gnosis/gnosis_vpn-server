@@ -2,7 +2,7 @@
 edition = "2024"
 license = "GPL-3.0"
 name    = "gnosis_vpn-server"
-version = "0.4.2"
+version = "0.4.3"
 
 [lib]
 name = "gnosis_vpn_server"
