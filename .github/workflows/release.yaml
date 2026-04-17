@@ -27,7 +27,7 @@ jobs:
             runner: depot-ubuntu-22.04-4
             build_command: nix build -L .#binary-gnosis_vpn-server-x86_64-linux
           - architecture: aarch64-linux
-            runner: depot-ubuntu-22.04-4
+            runner: depot-ubuntu-22.04-4-arm
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
     uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@build-binaries-v2
     permissions:
@@ -64,7 +64,7 @@ jobs:
             "build_command": "nix run .#docker-gnosis_vpn-server-x86_64-linux"
           },
           {
-            "runner": "depot-ubuntu-22.04-4",
+            "runner": "depot-ubuntu-22.04-4-arm",
             "architecture": "aarch64-linux",
             "build_command": "nix run .#docker-gnosis_vpn-server-aarch64-linux"
           }
