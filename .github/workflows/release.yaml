@@ -71,6 +71,7 @@ jobs:
         ]
       cachix_cache_name: gnosis-vpn-server
       docker_image_name: gnosis_vpn-server
+      docker_gcp_registry: europe-west3-docker.pkg.dev/gnosisvpn-production/docker-images
       docker_image_format: docker
       docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
     secrets:
