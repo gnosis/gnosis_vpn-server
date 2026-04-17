@@ -1,3 +1,4 @@
+---
 name: Merge PR
 on:
   pull_request:
@@ -11,23 +12,88 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build-binaries:
+    name: Binary ${{ matrix.architecture }}
+    if: github.event.pull_request.merged == true
     strategy:
+      fail-fast: false
       matrix:
-        binary:
+        include:
           - architecture: x86_64-linux
             runner: depot-ubuntu-22.04-4
-    name: Binary ${{ matrix.binary.architecture }}
-    uses: ./.github/workflows/build-binaries.yaml
+            build_command: nix build -L .#binary-gnosis_vpn-server-x86_64-linux
+          - architecture: aarch64-linux
+            runner: depot-ubuntu-22.04-4
+            build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@build-binaries-v2
+    permissions:
+      contents: read
     with:
-      branch: ${{ github.sha }} # Use the commit SHA as the branch is deleted after the PR is merged
-      runner: ${{ matrix.binary.runner }}
-      architecture: ${{ matrix.binary.architecture }}
-      version_type: "pr"
-    secrets: inherit
-  cache-deps:
+      source_branch: ${{ github.event.pull_request.merge_commit_sha }}
+      version_type: pr
+      architecture: ${{ matrix.architecture }}
+      cachix_cache_name: gnosis-vpn-server
+      build_command: ${{ matrix.build_command }}
+      binary: gnosis_vpn-server
+      runner: ${{ matrix.runner }}
+    secrets:
+      gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+      cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+  build-docker:
+    name: Docker
+    if: github.event.pull_request.merged == true
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@build-docker-v2
+    needs: build-binaries
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    with:
+      source_branch: ${{ github.event.pull_request.merge_commit_sha }}
+      version_type: pr
+      build_matrix: |
+        [
+          {
+            "runner": "depot-ubuntu-22.04-4",
+            "architecture": "x86_64-linux",
+            "build_command": "nix run .#docker-gnosis_vpn-server-x86_64-linux"
+          },
+          {
+            "runner": "depot-ubuntu-22.04-4",
+            "architecture": "aarch64-linux",
+            "build_command": "nix run .#docker-gnosis_vpn-server-aarch64-linux"
+          }
+        ]
+      cachix_cache_name: gnosis-vpn-server
+      docker_image_name: gnosis_vpn-server
+      docker_image_format: docker
+      docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
+    secrets:
+      gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+      cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+  cache_deps:
     name: Cache deps
     if: github.event.pull_request.merged == true
-    uses: ./.github/workflows/cache-deps.yaml
-    with:
-      branch: ${{ github.event.pull_request.base.ref }}
-    secrets: inherit
+    runs-on: depot-ubuntu-22.04-4
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Cache dependencies
+        uses: hoprnet/hopr-workflows/actions/nix-action@nix-action-v1
+        with:
+          source_branch: ${{ github.event.pull_request.merge_commit_sha }}
+          cachix_cache_name: gnosis-vpn-server
+          cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          command: |
+            set -e
+            cat >> .cargo/config.toml << TOML
+            [source.hopr-cargo-registry-cache]
+            registry = "sparse+${PRIVATE_CARGO_REGISTRY_PROXY_URL}"
+
+            [source.crates-io]
+            replace-with = "hopr-cargo-registry-cache"
+            TOML
+            nix develop -c cargo fetch
+        env:
+          PRIVATE_CARGO_REGISTRY_PROXY_URL: ${{ secrets.PRIVATE_CARGO_REGISTRY_PROXY_URL }}

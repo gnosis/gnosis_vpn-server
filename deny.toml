@@ -2,7 +2,6 @@
 multiple-versions = 'allow'
 
 [licenses]
-private = { ignore = true }
 allow = [
   "0BSD",
   "Apache-2.0",
@@ -20,3 +19,4 @@ allow = [
   "Unlicense",
   "Zlib",
 ]
+private = { ignore = true }
