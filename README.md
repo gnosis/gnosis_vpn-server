@@ -7,6 +7,7 @@ This binary aims to run alongside and manages a WireGuard server.
 To maintain project organization, we use the main **[gnosis_vpn](https://github.com/gnosis/gnosis_vpn)** repository as the central hub for all user feedback.
 
 ### How to report an issue for this component
+
 1. Visit the [gnosis_vpn Discussions](https://github.com/gnosis/gnosis_vpn/discussions/new?category=issues-bug-reports).
 2. Start a new discussion using the bug report template.
 3. Specify that the issue relates to this component (server).
