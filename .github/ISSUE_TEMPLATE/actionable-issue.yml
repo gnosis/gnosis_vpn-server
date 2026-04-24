@@ -1,3 +1,4 @@
+---
 name: Actionable Issue
 description: Track work promoted from a Discussion.
 labels: ["actionable", "triage"]
