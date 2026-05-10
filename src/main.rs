@@ -2,38 +2,24 @@
 extern crate rocket;
 
 use anyhow::{Context, Result};
-use cli::Command;
 use figment::providers::{Format, Toml};
-use metrics::Metrics;
-use ops::Ops;
 use rocket::figment::Figment;
 use serde_json::json;
 use std::fs;
 use std::process;
 use tokio::time;
 
-use crate::config::Config;
-use crate::remove::{RemoveDisconnected, RemoveExpired};
-
-use crate::register::RunVariant;
-use crate::wg::conf;
-use crate::wg::quick;
-
-mod api_error;
-mod cli;
-mod config;
-mod index;
-mod ip_range;
-mod metrics;
-mod ops;
-mod ping;
-mod register;
-mod remove;
-mod shell_command_ext;
-mod status;
-mod unregister;
-mod versions;
-mod wg;
+use gnosis_vpn_server::cli::{self, Command};
+use gnosis_vpn_server::config::Config;
+use gnosis_vpn_server::metrics;
+use gnosis_vpn_server::metrics::Metrics;
+use gnosis_vpn_server::ops::Ops;
+use gnosis_vpn_server::register::{self, RunVariant};
+use gnosis_vpn_server::remove::{self, RemoveDisconnected, RemoveExpired};
+use gnosis_vpn_server::status;
+use gnosis_vpn_server::unregister;
+use gnosis_vpn_server::wg::{conf, quick};
+use gnosis_vpn_server::{index, ping, versions};
 
 #[rocket::main]
 async fn main() -> Result<()> {
