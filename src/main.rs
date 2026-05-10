@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate rocket;
-
 use anyhow::{Context, Result};
 use figment::providers::{Format, Toml};
 use rocket::figment::Figment;
@@ -72,12 +69,12 @@ async fn main() -> Result<()> {
                 .manage(sync_wg_interface)
                 .mount(
                     "/api/v1/clients",
-                    routes![register::api, unregister::api, status::api_single],
+                    rocket::routes![register::api, unregister::api, status::api_single],
                 )
-                .mount("/api/v1", routes![status::api, ping::ping])
-                .mount("/metrics", routes![metrics::metrics_endpoint])
-                .mount("/versions", routes![versions::versions])
-                .mount("/", routes![index::index])
+                .mount("/api/v1", rocket::routes![status::api, ping::ping])
+                .mount("/metrics", rocket::routes![metrics::metrics_endpoint])
+                .mount("/versions", rocket::routes![versions::versions])
+                .mount("/", rocket::routes![index::index])
                 .launch();
 
             if periodically_run_cleanup {
