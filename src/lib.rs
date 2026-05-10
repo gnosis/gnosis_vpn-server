@@ -4,6 +4,9 @@
 #[macro_use]
 extern crate rocket;
 
+pub mod runner;
+pub use runner::run;
+
 pub mod api_error;
 pub mod cli;
 pub mod config;
