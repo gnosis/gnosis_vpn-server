@@ -4,21 +4,21 @@
 #[macro_use]
 extern crate rocket;
 
-pub mod runner;
+mod runner;
 pub use runner::run;
 
-pub mod api_error;
-pub mod cli;
-pub mod config;
-pub mod index;
-pub mod ip_range;
-pub mod metrics;
-pub mod ops;
-pub mod ping;
-pub mod register;
-pub mod remove;
-pub mod shell_command_ext;
-pub mod status;
-pub mod unregister;
-pub mod versions;
-pub mod wg;
+mod api_error;
+mod cli;
+mod config;
+mod index;
+mod ip_range;
+mod metrics;
+mod ops;
+mod ping;
+mod register;
+mod remove;
+mod shell_command_ext;
+mod status;
+mod unregister;
+mod versions;
+mod wg;
