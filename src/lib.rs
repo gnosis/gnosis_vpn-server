@@ -5,7 +5,7 @@
 extern crate rocket;
 
 mod runner;
-pub use runner::{run, RunError};
+pub use runner::{RunError, run};
 
 mod api_error;
 mod cli;
