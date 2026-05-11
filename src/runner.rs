@@ -1,10 +1,36 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
 use figment::providers::{Format, Toml};
 use rocket::figment::Figment;
 use serde_json::json;
 use std::fs;
-use std::process;
 use tokio::time;
+
+#[derive(Debug, thiserror::Error)]
+pub enum RunError {
+    #[error("failed to bring up wg interface: {0:#}")]
+    WgUpFailed(anyhow::Error),
+    #[error("failed to bring down wg interface: {0:#}")]
+    WgDownFailed(anyhow::Error),
+    /// Command completed with an error; output already printed to stdout.
+    #[error("command failed")]
+    CommandFailed,
+    #[error(transparent)]
+    Fatal(#[from] anyhow::Error),
+}
+
+// serde_json::Error and rocket::Error don't implement Into<anyhow::Error>
+// automatically via the #[from] blanket, so we bridge them explicitly.
+impl From<serde_json::Error> for RunError {
+    fn from(e: serde_json::Error) -> Self {
+        Self::Fatal(e.into())
+    }
+}
+
+impl From<rocket::Error> for RunError {
+    fn from(e: rocket::Error) -> Self {
+        Self::Fatal(e.into())
+    }
+}
 
 use crate::cli::{self, Command};
 use crate::config::Config;
@@ -17,7 +43,7 @@ use crate::unregister;
 use crate::wg::{conf, quick};
 use crate::{index, ping, versions};
 
-pub async fn run() -> Result<()> {
+pub async fn run() -> Result<(), RunError> {
     let args = cli::parse();
     let config_path = fs::canonicalize(args.config_file).context("failed locating config file")?;
     let content = fs::read_to_string(&config_path).context("failed reading config file")?;
@@ -52,7 +78,7 @@ pub async fn run() -> Result<()> {
                     Ok(_) => (),
                     Err(err) => {
                         tracing::error!(?err, "Bringing interface up failed");
-                        process::exit(1);
+                        return Err(RunError::WgUpFailed(err.into()));
                     }
                 }
             }
@@ -83,7 +109,7 @@ pub async fn run() -> Result<()> {
                     Ok(_) => (),
                     Err(err) => {
                         tracing::error!(?err, "Taking interface down failed");
-                        process::exit(1);
+                        return Err(RunError::WgDownFailed(err.into()));
                     }
                 }
             }
@@ -106,7 +132,7 @@ pub async fn run() -> Result<()> {
                     } else {
                         println!("{err:?}");
                     }
-                    process::exit(1);
+                    return Err(RunError::CommandFailed);
                 }
             }
         }
@@ -128,7 +154,7 @@ pub async fn run() -> Result<()> {
                     } else {
                         println!("{err:?}");
                     }
-                    process::exit(1);
+                    return Err(RunError::CommandFailed);
                 }
             }
         }
@@ -164,7 +190,7 @@ pub async fn run() -> Result<()> {
                     } else {
                         println!("{err}");
                     }
-                    process::exit(1);
+                    return Err(RunError::CommandFailed);
                 }
             }
         }
@@ -192,7 +218,7 @@ pub async fn run() -> Result<()> {
                     } else {
                         println!("{err:?}");
                     }
-                    process::exit(1);
+                    return Err(RunError::CommandFailed);
                 }
             }
         }
@@ -221,7 +247,7 @@ pub async fn run() -> Result<()> {
                     } else {
                         println!("{err:?}");
                     }
-                    process::exit(1);
+                    return Err(RunError::CommandFailed);
                 }
             }
         }
@@ -246,7 +272,7 @@ pub async fn run() -> Result<()> {
                     } else {
                         println!("{err:?}");
                     }
-                    process::exit(1);
+                    return Err(RunError::CommandFailed);
                 }
             }
         }
