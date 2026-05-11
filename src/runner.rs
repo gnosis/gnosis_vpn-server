@@ -19,9 +19,6 @@ use crate::{index, ping, versions};
 
 pub async fn run() -> Result<()> {
     let args = cli::parse();
-    // install global collector configured based on RUST_LOG env var.
-    tracing_subscriber::fmt::init();
-
     let config_path = fs::canonicalize(args.config_file).context("failed locating config file")?;
     let content = fs::read_to_string(&config_path).context("failed reading config file")?;
     let config: Config = toml::from_str(&content).context("failed parsing config file content")?;
