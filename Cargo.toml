@@ -11,7 +11,7 @@ path = "src/lib.rs"
 [dependencies]
 anyhow             = "1.0"
 clap               = { version = "4.6.0", features = ["derive", "env"] }
-figment            = "0.10"
+figment            = "0.10.19"
 prometheus         = "0.14"
 rand               = "0.9"
 rocket             = { version = "0.5", features = ["json"] }
