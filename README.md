@@ -96,7 +96,7 @@ Updates are grouped by ecosystem:
 
 | Group               | What it covers                                        | Notes                                                                                        |
 | ------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `nix flake updates` | `flake.lock` inputs (nixpkgs, crane, rust-overlay, …) | digest/pinDigest updates; `pinDigests` disabled at URL level since nix pins via `flake.lock` |
+| `nix flake updates` | `flake.lock` inputs (nixpkgs, crane, rust-overlay, …) | digest/pinDigest updates; `pinDigests` disabled for the `nix` manager since nix pins via `flake.lock` |
 | `github-actions`    | `.github/workflows` action refs                       | digest-pinned                                                                                |
 | _(individual PRs)_  | Cargo crates                                          | one PR per crate                                                                             |
 | Docker images       | `docker/Dockerfile` base images                       | digest-pinned via global `pinDigests: true`                                                  |
