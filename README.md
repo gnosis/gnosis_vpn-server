@@ -88,7 +88,7 @@ gnosis_vpn-server -c config.toml serve --sync-wg-interface --periodically-run-cl
 
 ## Dependency Updates
 
-Renovate runs on a **Monday 00:00–04:00 UTC** schedule with a 14-day minimum release
+Renovate runs on Renovate’s `schedule:earlyMondays` preset with a 14-day minimum release
 age, so most PRs appear early Monday morning and only for packages that have been
 released for at least two weeks.
 
