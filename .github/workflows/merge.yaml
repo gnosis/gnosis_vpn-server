@@ -24,7 +24,7 @@ jobs:
           - architecture: aarch64-linux
             runner: depot-ubuntu-22.04-arm-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
-    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@b063eebe2dfb2f92e7177a8f81383aaac4835d09 # build-binaries-v2
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@dd42e718b100d37fcb5cb2eafd8d44b574112ed0 # build-binaries-v3
     permissions:
       contents: read
     with:
@@ -35,15 +35,15 @@ jobs:
       build_command: ${{ matrix.build_command }}
       binary: gnosis_vpn-server
       runner: ${{ matrix.runner }}
-    secrets:
       gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+    secrets:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
       gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
       gpg_private_key_password: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
   build-docker:
     name: Docker
     if: github.event.pull_request.merged == true
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@79e03bcee1896ce8c78ee106560e1c7f5bb05e38 # build-docker-v2
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@dd42e718b100d37fcb5cb2eafd8d44b574112ed0 # build-docker-v3
     needs: build-binaries
     permissions:
       contents: read
@@ -70,8 +70,8 @@ jobs:
       docker_gcp_registry: europe-west3-docker.pkg.dev/gnosisvpn-production/docker-images
       docker_image_format: docker
       docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
-    secrets:
       gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+    secrets:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
   cache_deps:
     name: Cache deps
