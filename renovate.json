@@ -16,8 +16,8 @@
     },
     {
       "matchManagers": ["nix"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "nix flake updates"
+      "groupName": "nix flake updates",
+      "pinDigests": false
     }
   ]
 }
