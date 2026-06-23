@@ -94,12 +94,12 @@ released for at least two weeks.
 
 Updates are grouped by ecosystem:
 
-| Group               | What it covers                                        | Notes                                                                                        |
-| ------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Group               | What it covers                                        | Notes                                                                                                 |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `nix flake updates` | `flake.lock` inputs (nixpkgs, crane, rust-overlay, …) | digest/pinDigest updates; `pinDigests` disabled for the `nix` manager since nix pins via `flake.lock` |
-| `github-actions`    | `.github/workflows` action refs                       | digest-pinned                                                                                |
-| _(individual PRs)_  | Cargo crates                                          | one PR per crate                                                                             |
-| Docker images       | `docker/Dockerfile` base images                       | digest-pinned via global `pinDigests: true`                                                  |
+| `github-actions`    | `.github/workflows` action refs                       | digest-pinned                                                                                         |
+| _(individual PRs)_  | Cargo crates                                          | one PR per crate                                                                                      |
+| Docker images       | `docker/Dockerfile` base images                       | digest-pinned via global `pinDigests: true`                                                           |
 
 `prCreation: immediate` is intentional — CI only triggers on pull request events, so
 waiting for branch checks would deadlock.
