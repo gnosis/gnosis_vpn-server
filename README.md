@@ -86,6 +86,11 @@ Run as an HTTP server:
 gnosis_vpn-server -c config.toml serve --sync-wg-interface --periodically-run-cleanup
 ```
 
+## Dependency Updates
+
+Renovate opens PRs immediately (`prCreation: immediate`) because CI only triggers
+on pull request events — waiting for branch checks would deadlock forever.
+
 ## Deployment
 
 Show potential deployment targets:
