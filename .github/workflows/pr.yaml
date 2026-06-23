@@ -76,6 +76,8 @@ jobs:
   checks:
     name: Checks
     runs-on: depot-ubuntu-22.04-4
+    permissions:
+      contents: read
     steps:
       - name: Run checks
         uses: hoprnet/hopr-workflows/actions/nix-action@c2aca7e56d25c4a786049ccf816c7f1af8721de8 # nix-action-v1
