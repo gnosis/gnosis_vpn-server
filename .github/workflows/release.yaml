@@ -40,8 +40,6 @@ jobs:
       cachix_cache_name: gnosis-vpn-server
       build_command: ${{ matrix.build_command }}
       binary: gnosis_vpn-server
-      gcp_workload_identity_provider: projects/277369779617/locations/global/workloadIdentityPools/github-workflow-pool/providers/github-provider
-      gcp_service_account: github-workflows@hoprassociation.iam.gserviceaccount.com
       runner: ${{ matrix.runner }}
     secrets:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -76,9 +74,8 @@ jobs:
       docker_gcp_registry: europe-west3-docker.pkg.dev/gnosisvpn-production/docker-images
       docker_image_format: docker
       docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
-      gcp_workload_identity_provider: projects/277369779617/locations/global/workloadIdentityPools/github-workflow-pool/providers/github-provider
-      gcp_service_account: github-workflows@hoprassociation.iam.gserviceaccount.com
     secrets:
+      gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
   release:
     name: Close release
@@ -88,7 +85,6 @@ jobs:
     runs-on: depot-ubuntu-22.04-4
     permissions:
       contents: write
-      id-token: write
     steps:
       - name: Release version
         uses: hoprnet/hopr-workflows/actions/release-version@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # release-version-v5
@@ -101,8 +97,7 @@ jobs:
           zulip_email: ${{ secrets.ZULIP_EMAIL }}
           zulip_channel: GnosisVPN
           zulip_topic: Releases
-          gcp_workload_identity_provider: projects/277369779617/locations/global/workloadIdentityPools/github-workflow-pool/providers/github-provider
-          gcp_service_account: github-workflows@hoprassociation.iam.gserviceaccount.com
+          gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
           gcp_artifact_package: gnosis_vpn-server
           github_app_private_key: ${{ secrets.GH_APP_GNOSISVPN_BOT_PRIVATE_KEY }}
           github_app_client_id: ${{ secrets.GH_APP_GNOSISVPN_CLIENT_ID }}
