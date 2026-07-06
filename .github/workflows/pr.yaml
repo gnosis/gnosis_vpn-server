@@ -40,7 +40,7 @@ jobs:
       build_command: ${{ matrix.build_command }}
       binary: gnosis_vpn-server
       gcp_workload_identity_provider: projects/656686060169/locations/global/workloadIdentityPools/gnosisvpn-gh-pool/providers/github-provider
-      gcp_service_account: download-gnosisvpn-gh-sa@gnosisvpn-production.iam.gserviceaccount.com
+      gcp_service_account: github-actions@gnosisvpn-production.iam.gserviceaccount.com
       runner: ${{ matrix.runner }}
       enabled: ${{ matrix.required_label == '' || contains(github.event.pull_request.labels.*.name, matrix.required_label)
         }}
@@ -75,7 +75,7 @@ jobs:
       docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
       fail_on_scan_vulnerabilities: ${{ vars.FAIL_ON_SCAN_VULNERABILITIES }}
       gcp_workload_identity_provider: projects/656686060169/locations/global/workloadIdentityPools/gnosisvpn-gh-pool/providers/github-provider
-      gcp_service_account: download-gnosisvpn-gh-sa@gnosisvpn-production.iam.gserviceaccount.com
+      gcp_service_account: github-actions@gnosisvpn-production.iam.gserviceaccount.com
     secrets:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
   checks:
