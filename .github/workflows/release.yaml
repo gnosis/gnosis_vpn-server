@@ -29,7 +29,7 @@ jobs:
           - architecture: aarch64-linux
             runner: depot-ubuntu-22.04-arm-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
-    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # build-binaries-v3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # build-binaries-v3.1.1
     permissions:
       contents: read
       id-token: write
@@ -49,7 +49,7 @@ jobs:
       gpg_private_key_password: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
   build-docker:
     name: Docker
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # build-docker-v3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # build-docker-v3.1.2
     needs: build-binaries
     permissions:
       contents: read
@@ -90,7 +90,7 @@ jobs:
       contents: write
     steps:
       - name: Release version
-        uses: hoprnet/hopr-workflows/actions/release-version@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # release-version-v5
+        uses: hoprnet/hopr-workflows/actions/release-version@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # release-version-v5.1.1
         with:
           source_branch: ${{ github.ref_name }}
           release_type: ${{ inputs.release_type }}
