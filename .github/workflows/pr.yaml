@@ -28,7 +28,7 @@ jobs:
             runner: depot-ubuntu-22.04-arm-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
             required_label: "binary:aarch64-linux"
-    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # build-binaries-v3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@45221eb1aadfc5c46751306c5c7d6d291c8a24b3 # build-binaries-v3
     permissions:
       contents: read
       id-token: write
@@ -49,7 +49,7 @@ jobs:
   build-docker:
     name: Docker
     if: ${{ github.event.pull_request.head.repo.fork == false }}
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # build-docker-v3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@25898d13dab1b3fbf4c33c394e7c581578a2b0d7 # build-docker-v3
     needs: build-binaries
     permissions:
       contents: read
@@ -83,7 +83,7 @@ jobs:
       contents: read
     steps:
       - name: Run checks
-        uses: hoprnet/hopr-workflows/actions/nix-action@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # nix-action-v1
+        uses: hoprnet/hopr-workflows/actions/nix-action@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # nix-action-v1
         with:
           source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
           cachix_cache_name: gnosis-vpn-server
