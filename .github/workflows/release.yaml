@@ -29,7 +29,7 @@ jobs:
           - architecture: aarch64-linux
             runner: depot-ubuntu-22.04-arm-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
-    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # build-binaries-v3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # build-binaries-v3.1.1
     permissions:
       contents: read
       id-token: write
@@ -41,13 +41,15 @@ jobs:
       build_command: ${{ matrix.build_command }}
       binary: gnosis_vpn-server
       runner: ${{ matrix.runner }}
+      gcp_workload_identity_provider: projects/656686060169/locations/global/workloadIdentityPools/gnosisvpn-gh-pool/providers/github-provider
+      gcp_service_account: download-gnosisvpn-gh-sa@gnosisvpn-production.iam.gserviceaccount.com
     secrets:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
       gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
       gpg_private_key_password: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
   build-docker:
     name: Docker
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # build-docker-v3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # build-docker-v3.1.2
     needs: build-binaries
     permissions:
       contents: read
@@ -74,8 +76,9 @@ jobs:
       docker_gcp_registry: europe-west3-docker.pkg.dev/gnosisvpn-production/docker-images
       docker_image_format: docker
       docker_bucket_sboms: gnosisvpn-production-docker-images-sboms
+      gcp_workload_identity_provider: projects/656686060169/locations/global/workloadIdentityPools/gnosisvpn-gh-pool/providers/github-provider
+      gcp_service_account: download-gnosisvpn-gh-sa@gnosisvpn-production.iam.gserviceaccount.com
     secrets:
-      gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
   release:
     name: Close release
@@ -87,7 +90,7 @@ jobs:
       contents: write
     steps:
       - name: Release version
-        uses: hoprnet/hopr-workflows/actions/release-version@9d3880d21d35d3ee6d3bc5cde6b62e91a84b56d8 # release-version-v5
+        uses: hoprnet/hopr-workflows/actions/release-version@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # release-version-v5.1.1
         with:
           source_branch: ${{ github.ref_name }}
           release_type: ${{ inputs.release_type }}
@@ -97,7 +100,8 @@ jobs:
           zulip_email: ${{ secrets.ZULIP_EMAIL }}
           zulip_channel: GnosisVPN
           zulip_topic: Releases
-          gcp_service_account: ${{ secrets.GCP_SA_GITHUB_ACTIONS }}
+          gcp_workload_identity_provider: projects/656686060169/locations/global/workloadIdentityPools/gnosisvpn-gh-pool/providers/github-provider
+          gcp_service_account: download-gnosisvpn-gh-sa@gnosisvpn-production.iam.gserviceaccount.com
           gcp_artifact_package: gnosis_vpn-server
           github_app_private_key: ${{ secrets.GH_APP_GNOSISVPN_BOT_PRIVATE_KEY }}
           github_app_client_id: ${{ secrets.GH_APP_GNOSISVPN_CLIENT_ID }}
