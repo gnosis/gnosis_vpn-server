@@ -119,5 +119,5 @@ The resulting binary is in `result/bin/`:
 ```
 > ls -la result/bin/
 total 6736
--r-xr-xr-x 1 root root 6886689  1. Jan 1970  gnosis_vpn-server
+-r-xr-xr-x 1 root root 6886690  1. Jan 1970  gnosis_vpn-server
 ```
