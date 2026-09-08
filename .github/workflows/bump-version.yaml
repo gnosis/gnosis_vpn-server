@@ -26,9 +26,7 @@ jobs:
     runs-on: depot-ubuntu-22.04-4 # Depot Ubuntu 22.04, 4 CPUs, 16 GB RAM
     permissions:
       contents: read
-      # Lets the job open the bump PR with its own GITHUB_TOKEN; the app
-      # installation has no pull-requests scope, and minting an app token
-      # with a permission the installation lacks fails outright.
+      # GITHUB_TOKEN opens the bump PR; the app installation has no pull-requests scope
       pull-requests: write
     steps:
       - name: Require branch ref
@@ -105,12 +103,7 @@ jobs:
           fi
           nix develop --command cargo update --workspace
           git diff --stat -- Cargo.toml Cargo.lock
-      # The dispatching branch may be protected (main's ruleset requires a
-      # pull request with one approving review), so the bump cannot be pushed
-      # to it directly. Land the commit on an unprotected side branch and
-      # raise a PR back into the dispatching branch. The side branch embeds
-      # the base ref so runs from different bases that compute the same
-      # version cannot force-push over each other's PR branch.
+      # Base may be protected: land on a side branch (base-scoped so same-version bumps from different bases can't collide) and PR back
       - name: Commit and push version bump
         id: push
         shell: bash
@@ -125,8 +118,7 @@ jobs:
           git switch -c "${branch}"
           git add Cargo.toml Cargo.lock
           git commit -m "chore(version): v${NEW_VERSION}"
-          # Force so a retry after a failed run reuses the same branch and
-          # updates any PR already open from it.
+          # force so a retried run reuses the branch and updates its open PR
           git push --force origin "HEAD:refs/heads/${branch}"
           echo "branch=${branch}" >> "$GITHUB_OUTPUT"
       - name: Open pull request
@@ -139,8 +131,7 @@ jobs:
           BRANCH: ${{ steps.push.outputs.branch }}
           NEW_VERSION: ${{ steps.version.outputs.new_version }}
         run: |
-          # Reuse an open PR from a previous run of the same bump; a closed one
-          # must not be picked up, hence pr list --state open over pr view.
+          # --state open: reuse a prior run's PR but never pick up a closed one
           pr_url=$(gh pr list --head "${BRANCH}" --base "${BASE}" --state open --json url --jq '.[0].url // empty')
           if [[ -z "${pr_url}" ]]; then
             if ! pr_url=$(gh pr create \
@@ -164,12 +155,7 @@ jobs:
             echo
             echo "Requires one approving review and resolved review threads, then squash-merge."
           } >> "$GITHUB_STEP_SUMMARY"
-      # PRs opened with the workflow's GITHUB_TOKEN emit no pull_request
-      # events (GitHub suppresses them to prevent recursion), so CI would
-      # stay silent on the new PR. Re-push the bump commit with the app
-      # token, whose synchronize event does trigger workflows. Skipped when
-      # an existing PR was reused: the bump push above already delivered a
-      # synchronize event to it.
+      # GITHUB_TOKEN-created PRs get no pull_request events, so re-push as the app to trigger CI; a reused PR already got one from the bump push
       - name: Trigger CI on the pull request
         if: steps.pr.outputs.created == 'true'
         shell: bash
