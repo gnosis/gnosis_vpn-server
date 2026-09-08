@@ -18,10 +18,7 @@ pub struct Interface {
 
 impl Interface {
     pub fn up(ops: &Ops) -> Result<Self, Error> {
-        Command::new("wg-quick")
-            .arg("up")
-            .arg(ops.wg_config.to_string_lossy().to_string())
-            .run()?;
+        Command::new("wg-quick").arg("up").arg(&ops.wg_config).run()?;
         Ok(Self { ops: ops.clone() })
     }
 }
@@ -36,9 +33,6 @@ impl Drop for Interface {
 }
 
 fn down(ops: &Ops) -> Result<(), Error> {
-    Command::new("wg-quick")
-        .arg("down")
-        .arg(ops.wg_config.to_string_lossy().to_string())
-        .run()?;
+    Command::new("wg-quick").arg("down").arg(&ops.wg_config).run()?;
     Ok(())
 }
