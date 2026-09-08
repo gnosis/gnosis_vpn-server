@@ -9,8 +9,6 @@ use tokio::time;
 pub enum RunError {
     #[error("failed to bring up wg interface: {0:#}")]
     WgUpFailed(anyhow::Error),
-    #[error("failed to bring down wg interface: {0:#}")]
-    WgDownFailed(anyhow::Error),
     /// Command completed with an error; output already printed to stdout.
     #[error("command failed")]
     CommandFailed,
@@ -73,15 +71,18 @@ pub async fn run() -> Result<(), RunError> {
                 port = ops.rocket_port
             );
 
-            if sync_wg_interface {
-                match quick::up(&ops) {
-                    Ok(_) => (),
+            // Dropping this releases the interface on every exit path below, `?` included.
+            let _wg_interface = if sync_wg_interface {
+                match quick::Interface::up(&ops) {
+                    Ok(interface) => Some(interface),
                     Err(err) => {
                         tracing::error!(?err, "Bringing interface up failed");
                         return Err(RunError::WgUpFailed(err.into()));
                     }
                 }
-            }
+            } else {
+                None
+            };
 
             let figment = Figment::from(rocket::Config::default()).merge(Toml::string(&params));
             let rocket = rocket::custom(figment)
@@ -103,16 +104,6 @@ pub async fn run() -> Result<(), RunError> {
                 tokio::spawn(async move { run_cron(&ops, sync_wg_interface).await });
             }
             rocket.await?;
-
-            if sync_wg_interface {
-                match quick::down(&ops) {
-                    Ok(_) => (),
-                    Err(err) => {
-                        tracing::error!(?err, "Taking interface down failed");
-                        return Err(RunError::WgDownFailed(err.into()));
-                    }
-                }
-            }
         }
 
         Command::Status { json, public_key } if public_key.is_some() => {

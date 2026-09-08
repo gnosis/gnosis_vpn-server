@@ -11,4 +11,5 @@ fi
 awk -v key="$key" '{gsub(/PrivateKey = <private key>/, "PrivateKey = " key); print}' wggvpn.conf >temp.conf && mv temp.conf wggvpn.conf
 
 chmod 600 wggvpn.conf
-./gnosis_vpn-server --config-file ./config.toml serve --periodically-run-cleanup --sync-wg-interface
+# exec so the server replaces bash as PID 1 and receives SIGTERM; bash swallows it while a foreground child runs.
+exec ./gnosis_vpn-server --config-file ./config.toml serve --periodically-run-cleanup --sync-wg-interface
