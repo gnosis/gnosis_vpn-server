@@ -1,0 +1,5 @@
+# Default
+* @esterlus @ausias-armesto
+
+# Changing ownership itself stays with org admins.
+/.github/CODEOWNERS @gnosis/ext-hopr-admin
