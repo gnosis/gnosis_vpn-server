@@ -11,15 +11,31 @@ pub enum Error {
     Command(#[from] shell_command_ext::Error),
 }
 
-pub fn up(ops: &Ops) -> Result<(), Error> {
-    Command::new("wg-quick")
-        .arg("up")
-        .arg(ops.wg_config.to_string_lossy().to_string())
-        .run()?;
-    Ok(())
+/// Holds the WireGuard interface up for as long as it is alive.
+pub struct Interface {
+    ops: Ops,
 }
 
-pub fn down(ops: &Ops) -> Result<(), Error> {
+impl Interface {
+    pub fn up(ops: &Ops) -> Result<Self, Error> {
+        Command::new("wg-quick")
+            .arg("up")
+            .arg(ops.wg_config.to_string_lossy().to_string())
+            .run()?;
+        Ok(Self { ops: ops.clone() })
+    }
+}
+
+impl Drop for Interface {
+    fn drop(&mut self) {
+        // Drop cannot propagate; systemd's ExecStopPost is the backstop.
+        if let Err(err) = down(&self.ops) {
+            tracing::error!(?err, interface = %self.ops.interface_name, "Taking interface down failed");
+        }
+    }
+}
+
+fn down(ops: &Ops) -> Result<(), Error> {
     Command::new("wg-quick")
         .arg("down")
         .arg(ops.wg_config.to_string_lossy().to_string())
