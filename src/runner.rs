@@ -73,8 +73,6 @@ pub async fn run() -> Result<(), RunError> {
 
             // Dropping this releases the interface on every exit path below, `?` included.
             let _wg_interface = if sync_wg_interface {
-                // wg-quick reads the config, so a concurrent CLI write must not be in flight
-                let _wg_lock = lock::acquire(&ops.wg_config).context("locking wg interface")?;
                 match quick::Interface::up(&ops) {
                     Ok(interface) => Some(interface),
                     Err(err) => {
