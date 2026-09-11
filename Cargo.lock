@@ -461,6 +461,7 @@ dependencies = [
  "prometheus",
  "rand 0.10.2",
  "rocket",
+ "rustix",
  "serde",
  "serde_json",
  "thiserror 2.0.20",
