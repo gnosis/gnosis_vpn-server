@@ -16,6 +16,7 @@ prometheus = "0.14"
 rand       = "0.10.2"
 # no http2: it pulls in the EOL h2 0.3 (RUSTSEC-2026-0258) and we serve plain HTTP
 rocket             = { version = "0.5.1", default-features = false, features = ["json"] }
+rustix             = { version = "1.1.4", features = ["fs"] }
 serde              = { version = "1.0.229", features = ["derive"] }
 serde_json         = "1.0.151"
 thiserror          = "2.0.20"

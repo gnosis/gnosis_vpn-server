@@ -36,6 +36,7 @@ pub enum Error {
     SystemTime(#[from] SystemTimeError),
 }
 
+/// Caller must hold the interface lock, see [`crate::wg::lock::acquire`].
 pub fn previously_disconnected(ops: &Ops, once_not_connected: &[String]) -> Result<RemoveDisconnected, Error> {
     // determine never connected
     let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
@@ -62,6 +63,7 @@ pub fn previously_disconnected(ops: &Ops, once_not_connected: &[String]) -> Resu
     })
 }
 
+/// Caller must hold the interface lock, see [`crate::wg::lock::acquire`].
 pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) -> Result<RemoveExpired, Error> {
     let client_handshake_timeout = overwrite_client_handshake_timeout_s
         .map(Duration::from_secs)
@@ -102,6 +104,7 @@ pub fn expired(ops: &Ops, overwrite_client_handshake_timeout_s: &Option<u64>) ->
     })
 }
 
+/// Caller must hold the interface lock, see [`crate::wg::lock::acquire`].
 pub fn never_connected(ops: &Ops) -> Result<RemoveNeverConnected, Error> {
     let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let public_keys = dump

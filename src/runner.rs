@@ -38,7 +38,7 @@ use crate::register::{self, RunVariant};
 use crate::remove::{self, RemoveDisconnected, RemoveExpired};
 use crate::status;
 use crate::unregister;
-use crate::wg::{conf, quick};
+use crate::wg::{conf, lock, quick};
 use crate::{index, ping, versions};
 
 pub async fn run() -> Result<(), RunError> {
@@ -156,6 +156,8 @@ pub async fn run() -> Result<(), RunError> {
             force_ip,
             persist_config,
         } => {
+            let _wg_lock = lock::acquire(&ops.wg_config).context("locking wg interface")?;
+
             let variant = if let Some(force_ip) = force_ip {
                 RunVariant::UseIP(force_ip)
             } else {
@@ -191,6 +193,8 @@ pub async fn run() -> Result<(), RunError> {
             json,
             persist_config,
         } => {
+            let _wg_lock = lock::acquire(&ops.wg_config).context("locking wg interface")?;
+
             let unregister = unregister::run(&ops, &public_key);
             if persist_config && let Err(err) = conf::save_file(&ops) {
                 tracing::error!(?err, "Persisting interface state to config failed");
@@ -219,6 +223,8 @@ pub async fn run() -> Result<(), RunError> {
             json,
             persist_config,
         } => {
+            let _wg_lock = lock::acquire(&ops.wg_config).context("locking wg interface")?;
+
             let remove_expired = remove::expired(&ops, &client_handshake_timeout_s);
             if persist_config && let Err(err) = conf::save_file(&ops) {
                 tracing::error!(?err, "Persisting interface state to config failed");
@@ -244,6 +250,8 @@ pub async fn run() -> Result<(), RunError> {
         }
 
         Command::RemoveNeverConnected { json, persist_config } => {
+            let _wg_lock = lock::acquire(&ops.wg_config).context("locking wg interface")?;
+
             let remove_never_connected = remove::never_connected(&ops);
             if persist_config && let Err(err) = conf::save_file(&ops) {
                 tracing::error!(?err, "Persisting interface state to config failed");
@@ -284,18 +292,18 @@ async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
             "Running clients cleanup job with {} potential never connected targets from last run",
             once_not_connected.len()
         );
+        let _wg_lock = match lock::acquire(&ops.wg_config) {
+            Ok(wg_lock) => wg_lock,
+            Err(err) => {
+                tracing::error!(?err, "Skipping cleanup, locking wg interface failed");
+                continue;
+            }
+        };
+
         match remove::previously_disconnected(ops, &once_not_connected) {
             Ok(RemoveDisconnected { newly_found, removed }) => {
                 tracing::info!("Removed {} clients that were never connected", removed.len());
                 once_not_connected = newly_found;
-                if sync_wg_interface {
-                    match conf::save_file(ops) {
-                        Ok(_) => (),
-                        Err(err) => {
-                            tracing::error!(?err, "Persisting interface state to config failed");
-                        }
-                    }
-                }
             }
             Err(err) => {
                 tracing::error!("Error during clients cleanup: {err:?}");
@@ -309,6 +317,11 @@ async fn run_cron(ops: &Ops, sync_wg_interface: bool) {
             Err(err) => {
                 tracing::error!("Error during expired clients cleanup: {err:?}");
             }
+        }
+
+        // persist after both sweeps, otherwise wg-quick resurrects expired peers on restart
+        if sync_wg_interface && let Err(err) = conf::save_file(ops) {
+            tracing::error!(?err, "Persisting interface state to config failed");
         }
     }
 }

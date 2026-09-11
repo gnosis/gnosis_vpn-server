@@ -9,7 +9,7 @@ use std::net::Ipv4Addr;
 
 use crate::api_error::{self, ApiError};
 use crate::ops::Ops;
-use crate::wg::{conf, set, show};
+use crate::wg::{conf, lock, set, show};
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Register {
@@ -30,6 +30,8 @@ pub enum Error {
     WgShow(#[from] show::Error),
     #[error("wg set error: {0}")]
     WgSet(#[from] set::Error),
+    #[error("wg lock error: {0}")]
+    WgLock(#[from] lock::Error),
 }
 
 #[derive(Deserialize)]
@@ -49,22 +51,10 @@ pub fn api(
     sync_wg_interface: &State<bool>,
     ops: &State<Ops>,
 ) -> Result<(Status, Json<Register>), ApiError> {
-    let rand = rand::rng();
-    let res = run(ops, RunVariant::GenerateIP(rand), input.public_key.as_str());
+    let res = run_locked(ops, **sync_wg_interface, input.public_key.as_str());
 
     match res {
-        Ok(reg) if reg.newly_registered => {
-            if **sync_wg_interface {
-                match conf::save_file(ops) {
-                    Ok(_) => (),
-                    Err(err) => {
-                        tracing::error!(?err, "Persisting interface state to config failed");
-                    }
-                }
-            }
-
-            Ok((Status::Created, Json(reg)))
-        }
+        Ok(reg) if reg.newly_registered => Ok((Status::Created, Json(reg))),
         Ok(reg) => Ok((Status::Ok, Json(reg))),
         Err(Error::NoFreeIp) => Err(api_error::new(404, "Not Found", "No free IP available")),
         Err(err) => {
@@ -74,6 +64,22 @@ pub fn api(
     }
 }
 
+// Lock spans registration and persisting so no concurrent writer can reassign the claimed IP.
+fn run_locked(ops: &Ops, sync_wg_interface: bool, public_key: &str) -> Result<Register, Error> {
+    let _wg_lock = lock::acquire(&ops.wg_config)?;
+    let register = run(ops, RunVariant::GenerateIP(rand::rng()), public_key)?;
+
+    if register.newly_registered
+        && sync_wg_interface
+        && let Err(err) = conf::save_file(ops)
+    {
+        tracing::error!(?err, "Persisting interface state to config failed");
+    }
+
+    Ok(register)
+}
+
+/// Caller must hold the interface lock, see [`lock::acquire`].
 pub fn run(ops: &Ops, variant: RunVariant, public_key: &str) -> Result<Register, Error> {
     let dump = show::dump(ops.interface_name.as_str()).map_err(Error::WgShow)?;
     let res_peer = dump.peers.iter().find(|peer| peer.public_key == public_key);
