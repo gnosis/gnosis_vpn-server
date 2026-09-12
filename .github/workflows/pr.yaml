@@ -28,7 +28,7 @@ jobs:
             runner: depot-ubuntu-22.04-arm-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
             required_label: "binary:aarch64-linux"
-    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # build-binaries-v3.1.1
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@2e188234f62880e61a51b8df8750c7c0d61eac9c # PR #125 test pin - DO NOT MERGE
     permissions:
       contents: read
       id-token: write
@@ -51,7 +51,7 @@ jobs:
   build-docker:
     name: Docker
     if: ${{ github.event.pull_request.head.repo.fork == false }}
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@ade4bbd75f7204255c61d19c23f67d3da221e7d2 # build-docker-v3.1.2
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@2e188234f62880e61a51b8df8750c7c0d61eac9c # PR #125 test pin - DO NOT MERGE
     needs: build-binaries
     permissions:
       contents: read
