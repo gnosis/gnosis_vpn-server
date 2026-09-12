@@ -43,6 +43,7 @@ pub struct ApiStatus {
 
 #[derive(Debug, Serialize)]
 pub struct ApiSlots {
+    total: u32,
     available: u32,
     connected: u32,
 }
@@ -116,6 +117,7 @@ pub fn api(ops: &State<Ops>) -> Result<Json<ApiStatus>, ApiError> {
 
     Ok(Json(ApiStatus {
         slots: ApiSlots {
+            total: status.slots.total,
             available: status.slots.available,
             connected: status.slots.connected,
         },
