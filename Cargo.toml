@@ -21,6 +21,6 @@ serde              = { version = "1.0.229", features = ["derive"] }
 serde_json         = "1.0.151"
 thiserror          = "2.0.20"
 tokio              = { version = "1.53.1", features = ["rt", "time"] }
-toml               = "1.1.4"
+toml               = "1.1.5"
 tracing            = "0.1.44"
 tracing-subscriber = "0.3.23"
