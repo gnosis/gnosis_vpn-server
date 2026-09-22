@@ -18,11 +18,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    advisory-db = {
-      url = "github:rustsec/advisory-db";
-      flake = false;
-    };
-
     # HOPR Nix Library (provides reusable Rust build functions and treefmt config)
     nix-lib = {
       url = "github:hoprnet/nix-lib";
@@ -39,7 +34,6 @@
       nixpkgs,
       rust-overlay,
       crane,
-      advisory-db,
       nix-lib,
       ...
     }:
@@ -84,7 +78,6 @@
               self
               pkgs
               craneLib
-              advisory-db
               ;
           };
 
@@ -123,10 +116,11 @@
               gnosis_vpn-server-clippy
               gnosis_vpn-server-docs
               gnosis_vpn-server-test
-              gnosis_vpn-server-audit
               gnosis_vpn-server-licenses
               ;
           };
+
+          apps.audit = nixLib.mkAuditApp { rustToolchainFile = ./rust-toolchain.toml; };
 
           packages = {
             inherit (gnosisVpnServerPackages)

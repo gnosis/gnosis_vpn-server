@@ -7,14 +7,13 @@
 # - Local builds: binary-gnosis_vpn-server (release), binary-gnosis_vpn-server-dev (dev)
 # - Cross-compiled: binary-gnosis_vpn-server-{arch}-{os} for each target platform
 # - Docker: docker-gnosis_vpn-server-{arch}-{os} — shell apps that run `docker build`
-# - QA: gnosis_vpn-server-{test,clippy,docs,audit,licenses}
+# - QA: gnosis_vpn-server-{test,clippy,docs,licenses}
 {
   lib,
   nixLib,
   self,
   pkgs,
   craneLib,
-  advisory-db,
 }:
 
 let
@@ -38,7 +37,7 @@ let
       inherit fs;
       root = ../.;
     };
-    # Includes license/audit config files needed by crane-based checks
+    # deny.toml for the cargoDeny license check
     checks = nixLib.mkSrc {
       inherit fs;
       root = ../.;
@@ -206,12 +205,6 @@ in
       buildDocs = true;
     }
   );
-
-  # Audit dependencies
-  gnosis_vpn-server-audit = craneLib.cargoAudit {
-    src = sources.checks;
-    inherit advisory-db;
-  };
 
   # Audit licenses
   gnosis_vpn-server-licenses = craneLib.cargoDeny {
