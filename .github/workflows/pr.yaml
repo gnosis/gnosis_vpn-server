@@ -96,3 +96,14 @@ jobs:
       audit_command: nix run -L .#audit
     secrets:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+  ci-ok:
+    name: CI OK
+    # Single required status check: stable across matrix expansion, label gating and fork guards.
+    if: always() # a skipped job counts as passing, so never let a failed dependency skip this one
+    needs: [build-binaries, build-docker, checks]
+    runs-on: depot-ubuntu-22.04-4
+    permissions: {}
+    steps:
+      - name: Fail if any CI job failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
