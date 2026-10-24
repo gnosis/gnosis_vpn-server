@@ -90,10 +90,10 @@ pub async fn run() -> Result<(), RunError> {
                 .manage(metrics)
                 .manage(sync_wg_interface)
                 .mount(
-                    "/api/v1/clients",
+                    format!("{}/clients", versions::CURRENT.path()),
                     routes![register::api, unregister::api, status::api_single],
                 )
-                .mount("/api/v1", routes![status::api, ping::ping])
+                .mount(versions::CURRENT.path(), routes![status::api, ping::ping])
                 .mount("/metrics", routes![metrics::metrics_endpoint])
                 .mount("/versions", routes![versions::versions])
                 .mount("/", routes![index::index])
