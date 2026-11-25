@@ -1,5 +1,5 @@
 # Default
-* @esterlus @ausias-armesto
+* @esterlus @mjadach-iv @ausias-armesto
 
-# Changing ownership itself stays with org admins.
-/.github/CODEOWNERS @gnosis/ext-hopr-admin
+# Changing ownership itself stays with org admins plus the two gvpn maintainers.
+/.github/CODEOWNERS @esterlus @mjadach-iv @gnosis/ext-hopr-admin

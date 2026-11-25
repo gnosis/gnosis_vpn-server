@@ -16,7 +16,6 @@ env:
 jobs:
   build-binaries:
     name: Binary ${{ matrix.architecture }}
-    if: ${{ github.event.pull_request.head.repo.fork == false }}
     strategy:
       fail-fast: false
       matrix:
@@ -29,12 +28,13 @@ jobs:
             runner: depot-ubuntu-22.04-arm-4
             build_command: nix build -L .#binary-gnosis_vpn-server-aarch64-linux
             required_label: "binary:aarch64-linux"
-    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@d23d783b4ebb814a010815eaccd0bd0337687997 # build-binaries-v3.2.3
+    uses: hoprnet/hopr-workflows/.github/workflows/build-binaries.yaml@f15435652c572ad5688af679f0e2b153c98c9773 # build-binaries-v4.0.2
     permissions:
       contents: read
+      pull-requests: read
       id-token: write
     with:
-      source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
+      repo_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       version_type: commit
       architecture: ${{ matrix.architecture }}
       cachix_cache_name: gnosis-vpn-server
@@ -51,15 +51,14 @@ jobs:
       gpg_private_key_password: ${{ secrets.GPG_PRIVATE_KEY_PASSWORD }}
   build-docker:
     name: Docker
-    if: ${{ github.event.pull_request.head.repo.fork == false }}
-    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@d23d783b4ebb814a010815eaccd0bd0337687997 # build-docker-v3.4.4
+    uses: hoprnet/hopr-workflows/.github/workflows/build-docker.yaml@f15435652c572ad5688af679f0e2b153c98c9773 # build-docker-v4.0.3
     needs: build-binaries
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: read
       id-token: write
     with:
-      source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
+      repo_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       version_type: commit
       build_matrix: |
         [
@@ -81,12 +80,11 @@ jobs:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
   checks:
     name: Checks
-    if: ${{ github.event.pull_request.head.repo.fork == false }}
     permissions:
       contents: read
-    uses: hoprnet/hopr-workflows/.github/workflows/checks.yaml@061b4579c870b0fdc008f5ff07a3a500e4fede50 # workflow-checks-v2.3.1
+    uses: hoprnet/hopr-workflows/.github/workflows/checks.yaml@43c833e72dffe4f2f3be60193733e5657f8aa0d7 # workflow-checks-v3.0.0
     with:
-      source_branch: ${{ github.event.pull_request.head.ref || github.ref }}
+      repo_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       cachix_cache_name: gnosis-vpn-server
       conflict_markers: true
       # No `.#check` app or `.#ci` devshell here; `nix flake check` already covers clippy/docs/test/licenses.
@@ -99,7 +97,7 @@ jobs:
       cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
   ci-ok:
     name: CI OK
-    # Single required status check: stable across matrix expansion, label gating and fork guards.
+    # Single required status check: stable across matrix expansion and label gating.
     if: always() # a skipped job counts as passing, so never let a failed dependency skip this one
     needs: [build-binaries, build-docker, checks]
     runs-on: depot-ubuntu-22.04-4
